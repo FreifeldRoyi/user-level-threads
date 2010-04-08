@@ -1,8 +1,8 @@
 /*
  * thread.h
  *
- *  Created on: Mar 29, 2010
- *      Author: freifeldroyi
+ *  Created on: March 29, 2010
+ *      Author: Freifeld Royi
  */
 
 #ifndef THREAD_H_
@@ -10,9 +10,11 @@
 
 #include <ucontext.h>
 
+#define THREAD(x) ((thread_t*) (x))
+
 typedef struct thread
 {
-
+	ucontext_t cont;
 } thread_t;
 
 /**

@@ -9,8 +9,7 @@ typedef unsigned BOOL;
 const BOOL FALSE=0;
 const BOOL TRUE=1;
 
-typedef struct _task_t{
-
+typedef struct _task_t {
   struct _task_t** deps;
   int ndeps;
 

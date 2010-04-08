@@ -83,17 +83,16 @@ int node_destroy(node_t* nd, int(*destfunc)(void*));
 queue_t* queue_init();
 
 /**
- * Returns the head of the queue and dequeues it
+ * Returns the head of the queue's data and dequeues the node
  */
-node_t* queue_pop(queue_t* item);
+void* queue_pop(queue_t* item);
 
 /**
  * Inserts a new queue item to the end of the queue
  * Returns 1 if item is NULL
  * 0 if insert succeeds or -1 if insert fails
- *
  */
-int queue_push(queue_t* queue, node_t* item);
+int queue_push(queue_t* queue, void* item);
 
 /**
  * Returns the number of items in the queue

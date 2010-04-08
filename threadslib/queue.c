@@ -1,7 +1,7 @@
 /*
  * queue.c
  *
- *  Created on: Mar 26, 2010
+ *  Created on: March 26, 2010
  *      Author: Freifeld Royi
  */
 #include "include/queue.h"
@@ -70,18 +70,20 @@ queue_t* queue_init()
 	return toReturn;
 }
 
-node_t* queue_pop(queue_t* item)
+void* queue_pop(queue_t* item)
 {
-	node_t* toReturn = NULL;
+	node_t* nodeToPop = NULL;
+	void* toReturn = NULL;
 
 	if (QUEUE_SIZE(item) > 0)
 	{
-		toReturn = QUEUE_HEAD(item);
+		nodeToPop = QUEUE_HEAD(item);
 
-		if (toReturn == QUEUE_TAIL(item))
+		if (nodeToPop == QUEUE_TAIL(item))
 			QUEUE_TAIL(item) = NULL;
 
 		QUEUE_HEAD(item) = NODE_NEXT(QUEUE_HEAD(item));
+		toReturn = NODE_DATA(nodeToPop);
 	}
 
 	queue_dec_size(item);
@@ -89,19 +91,18 @@ node_t* queue_pop(queue_t* item)
 	return toReturn;
 }
 
-int queue_push(queue_t* queue, node_t* item)
+int queue_push(queue_t* queue, void* item)
 {
-	//NODE_NEXT(QUEUE_TAIL(queue)) = item;
-	//QUEUE_TAIL(queue) = item;
-	//queue_inc_size(queue);
 	int toReturn = 0;
+	node_t* toPush = node_init();
+	node_set_data(toPush, item);
 
-	toReturn = node_set_next(QUEUE_TAIL(queue), item);
+	toReturn = node_set_next(QUEUE_TAIL(queue), toPush);
 	if (toReturn == 1)
 	{
-		QUEUE_HEAD(queue) = item;
+		QUEUE_HEAD(queue) = toPush;
 	}
-	QUEUE_TAIL(queue) = item;
+	QUEUE_TAIL(queue) = toPush;
 	queue_inc_size(queue);
 
 	return toReturn;
