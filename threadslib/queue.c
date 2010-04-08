@@ -5,10 +5,12 @@
  *      Author: Freifeld Royi
  */
 #include "include/queue.h"
+#include <assert.h>
 
 node_t* node_init()
 {
 	node_t* toReturn = (node_t*)malloc(sizeof(node_t));
+	assert(toReturn != NULL);
 	NODE_DATA(toReturn) = NULL;
 	NODE_NEXT(toReturn) = NULL;
 
@@ -60,6 +62,7 @@ int node_destroy(node_t* nd, int(*destfunc)(void*))
 queue_t* queue_init()
 {
 	queue_t* toReturn = (queue_t*)malloc(sizeof(queue_t));
+	assert(toReturn != NULL);
 	QUEUE_HEAD(toReturn) = NULL;
 	QUEUE_TAIL(toReturn) = NULL;
 	QUEUE_SIZE(toReturn) = 0;
@@ -125,6 +128,7 @@ int queue_inc_size(queue_t* item)
 int queue_destroy(queue_t* dest)
 {
 	int toReturn = -1;
+
 	if (QUEUE_SIZE(dest) == 0)
 	{
 		free(dest);
