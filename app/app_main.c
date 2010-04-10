@@ -182,6 +182,63 @@ do_run(ui_cmd_t* cmd, app_data_t* app_data)
 }
 
 BOOL
+do_sw(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	unsigned tid;
+	if (app_data->threads == NULL)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;
+	}
+	tid = atoi(cmd->param);
+	if ((tid < 0) || ( tid >= app_data->nthreads))
+	{
+	  printf("Invalid thread id.\n");
+	  return FALSE;;
+	}
+	printf("%d\n", thread_stats(THREAD_NONGLOBAL_STATS | tid));
+	return TRUE;
+}
+
+BOOL
+do_msw(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	if (app_data->threads == NULL)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;
+	}
+	printf("%d\n", thread_stats(THREAD_STAT_MAX_SWITCHES));
+	return TRUE;
+}
+
+BOOL
+do_asw(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	if (app_data->threads == NULL)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;
+	}
+	unsigned total_switches =thread_stats(THREAD_STAT_TOTAL_SWITCHES);
+	printf("%f\n", (float)total_switches/(float)app_data->nthreads );
+	return TRUE;
+}
+
+BOOL
+do_switches(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	if (app_data->threads == NULL)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;
+	}
+	printf("%d\n",thread_stats(THREAD_STAT_TOTAL_SWITCHES));
+	return TRUE;
+}
+
+
+BOOL
 do_jw(ui_cmd_t* cmd, app_data_t* app_data)
 {
 	int tid = -1;
@@ -272,6 +329,26 @@ int app_main(int argc, char **argv) {
 	  else if (!strcmp("run", cmd.command))
 	  {
 		  if (!do_run(&cmd, &app_data))
+			  continue;
+	  }
+	  else if (!strcmp("SW", cmd.command))
+	  {
+		  if (!do_sw(&cmd, &app_data))
+			  continue;
+	  }
+	  else if (!strcmp("MSW", cmd.command))
+	  {
+		  if (!do_msw(&cmd, &app_data))
+			  continue;
+	  }
+	  else if (!strcmp("ASW", cmd.command))
+	  {
+		  if (!do_asw(&cmd, &app_data))
+			  continue;
+	  }
+	  else if (!strcmp("switches", cmd.command))
+	  {
+		  if (!do_switches(&cmd, &app_data))
 			  continue;
 	  }
 	  else if (!strcmp("JW", cmd.command))
