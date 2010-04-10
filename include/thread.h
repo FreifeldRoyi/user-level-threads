@@ -58,6 +58,7 @@ void thread_manager_init(void* arg);
 
 /**
  * This function starts the user space threads. All it does is simply let the manager run
+ * TODO it also needs to zero the global stats.
  */
 void threads_start();
 

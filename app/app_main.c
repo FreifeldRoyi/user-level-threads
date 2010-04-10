@@ -3,100 +3,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "include/thread.h"
+#include "include/app_util.h"
 
-typedef unsigned BOOL;
-const BOOL FALSE=0;
-const BOOL TRUE=1;
-
-typedef struct _task_t {
-  struct _task_t** deps;
-  int ndeps;
-
-  BOOL done;
-
-  unsigned task_id;
-} task_t;
-
-typedef struct{
-  task_t** my_tasks;
-  unsigned ntasks;
-  unsigned* global_job_count;
-  unsigned job_wait;
-} worker_thread_params_t;
+#define MAX_CMD_LEN 4
 
 typedef struct _ui_cmd_t{
-#define MAX_CMD_LEN 4
 	char command[MAX_CMD_LEN+1];
 	char param[FILENAME_MAX];
 }ui_cmd_t;
-
-typedef struct
-{
-  unsigned ntasks, nthreads;
-  task_t* tasks;
-  worker_thread_params_t* thread_params;
-}app_data_t;
-
-
-BOOL
-ready_to_run(task_t* task)
-{
-  int i;
-  assert(task!=NULL);
-
-  for (i=0; i < task->ndeps; ++i)
-  {
-    if (!task->deps[i]->done)
-      return FALSE;
-  }
-
-  return TRUE;
-}
-
-void worker_thread(void* p)
-{
-  worker_thread_params_t* params=p;
-  task_t** my_tasks = params->my_tasks;
-  BOOL done = FALSE;
-  int my_thread_id = current_thread_id();
-  unsigned i;
-  unsigned job_count;
-  unsigned job_count_diff;
-
-  printf("thread %d running with %d tasks\n",my_thread_id, params->ntasks);
-
-  while (!done)
-  {
-    done = TRUE;
-    for (i=0; i<params->ntasks; ++i)
-    {
-      printf("thread %d checking task %d\n",my_thread_id, my_tasks[i]->task_id);
-      if (my_tasks[i]->done)
-      {
-    	  printf("...task %d already done\n", my_tasks[i]->task_id);
-      }
-      else if ( ready_to_run(my_tasks[i]))
-      {
-		  printf("Thread %d performed job %d\n", my_thread_id,my_tasks[i]->task_id);
-		  ++(*params->global_job_count);
-		  my_tasks[i]->done = TRUE;
-      }
-      done = done && (my_tasks[i]->done);
-    }
-    ///TODO what values should we pass here?
-    job_count = *params->global_job_count;
-    thread_yield(0,0);
-    job_count_diff = *params->global_job_count - job_count;
-    if (job_count_diff > params->job_wait)
-    {
-    	params->job_wait = job_count_diff;
-    }
-  }
-  printf("thread %d completed all jobs\n",my_thread_id);
-
-  thread_term();
-}
 
 static void
 load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks, unsigned ntasks)
@@ -222,13 +136,127 @@ get_command(){
 	return ret;
 }
 
+BOOL
+do_load(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	FILE* file;
+	int i;
+
+	assert(app_data->threads == NULL); //we currently don't support loading more then one file.
+
+	file = fopen(cmd->param,"r");
+	if (file == NULL)
+	{
+	  printf("File not found %s\n", cmd->param);
+	  return FALSE;
+	}
+	*app_data = load_app_data(file);
+	app_data->threads = calloc(app_data->nthreads, sizeof(thread_t));
+
+	///TODO need to pass something here...
+	thread_manager_init(NULL);
+	for (i=0;i<app_data->nthreads;++i)
+	{
+	  app_data->thread_params[i].global_job_count = &app_data->job_count;
+	  create_thread(worker_thread,&app_data->thread_params[i]);
+	}
+	return TRUE;
+}
+
+BOOL
+do_run(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	int i;
+	if (app_data->threads == NULL)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;
+	}
+	app_data->job_count = 0;
+	for (i=0;i<app_data->ntasks; ++i)
+	{
+	  app_data->tasks[i].done = FALSE;
+	}
+	threads_start();
+	return TRUE;
+}
+
+BOOL
+do_jw(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	int tid = -1;
+	if (app_data->threads == NULL)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;;
+	}
+	tid = atoi(cmd->param);
+	if ((tid < 0) || ( tid >= app_data->nthreads))
+	{
+	  printf("Invalid thread id.\n");
+	  return FALSE;;
+	}
+	printf("%d\n", app_data->thread_params[tid].job_wait);
+	return TRUE;
+}
+
+BOOL
+do_mjw(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	unsigned max_job_wait = 0;
+	int i;
+
+	if (app_data->threads == NULL)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;;
+	}
+
+	for (i=0; i<app_data->nthreads; ++i)
+	{
+		max_job_wait = MAX(max_job_wait, app_data->thread_params[i].job_wait);
+	}
+	printf("%d\n", max_job_wait);
+	return TRUE;
+}
+
+BOOL
+do_ajw(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	unsigned sum_job_wait = 0;
+	int i;
+
+	if (app_data->threads == NULL)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;;
+	}
+
+	for (i=0; i<app_data->nthreads; ++i)
+	{
+		sum_job_wait += app_data->thread_params[i].job_wait;
+	}
+	printf("%f\n", (float)sum_job_wait/(float)app_data->nthreads);
+	return TRUE;
+}
+
+BOOL
+do_tasks(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	if (app_data->threads == NULL)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;;
+	}
+
+	printf("%d\n", app_data->job_count);
+	return TRUE;
+}
+
 int app_main(int argc, char **argv) {
   app_data_t app_data;
-  thread_t *threads = NULL;
   ui_cmd_t cmd;
   BOOL exit = FALSE;
-  unsigned i;
-  unsigned job_count = 0;
 
   do{
 	  cmd = get_command();
@@ -238,38 +266,33 @@ int app_main(int argc, char **argv) {
 	  }
 	  else if (!strcmp("load", cmd.command))
 	  {
-		  FILE* file;
-		  assert(threads == NULL); //we currently don't support loading more then one file.
-
-		  file = fopen(cmd.param,"r");
-		  if (file == NULL)
-		  {
-			  printf("File not found %s\n", cmd.param);
+		  if (!do_load(&cmd, &app_data))
 			  continue;
-		  }
-		  app_data = load_app_data(file);
-		  threads = calloc(app_data.nthreads, sizeof(thread_t));
-
-		  ///TODO need to pass something here...
-		  thread_manager_init(NULL);
-		  for (i=0;i<app_data.nthreads;++i)
-		  {
-			  app_data.thread_params[i].global_job_count = &job_count;
-			  create_thread(worker_thread,&app_data.thread_params[i]);
-		  }
 	  }
 	  else if (!strcmp("run", cmd.command))
 	  {
-		  if (threads == NULL)
-		  {
-			  printf("No data file loaded.\n");
+		  if (!do_run(&cmd, &app_data))
 			  continue;
-		  }
-		  for (i=0;i<app_data.ntasks; ++i)
-		  {
-			  app_data.tasks[i].done = FALSE;
-		  }
-		  threads_start();
+	  }
+	  else if (!strcmp("JW", cmd.command))
+	  {
+		  if (!do_jw(&cmd, &app_data))
+			  continue;
+	  }
+	  else if (!strcmp("MJW", cmd.command))
+	  {
+		  if (!do_mjw(&cmd, &app_data))
+			  continue;
+	  }
+	  else if (!strcmp("AJW", cmd.command))
+	  {
+		  if (!do_ajw(&cmd, &app_data))
+			  continue;
+	  }
+	  else if (!strcmp("tasks", cmd.command))
+	  {
+		  if (!do_tasks(&cmd, &app_data))
+			  continue;
 	  }
   }while (!exit);
 
