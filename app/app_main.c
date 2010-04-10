@@ -22,8 +22,21 @@ typedef struct{
   task_t** my_tasks;
   unsigned ntasks;
 
-  unsigned thread_id;
 } worker_thread_params_t;
+
+typedef struct _ui_cmd_t{
+#define MAX_CMD_LEN 4
+	char command[MAX_CMD_LEN+1];
+	char param[FILENAME_MAX];
+}ui_cmd_t;
+
+typedef struct
+{
+  unsigned ntasks, nthreads;
+  task_t* tasks;
+  worker_thread_params_t* thread_params;
+}app_data_t;
+
 
 BOOL
 ready_to_run(task_t* task)
@@ -45,41 +58,35 @@ void worker_thread(void* p)
   worker_thread_params_t* params=p;
   task_t** my_tasks = params->my_tasks;
   BOOL done = FALSE;
+  int my_thread_id = current_thread_id();
   unsigned i;
 
-  printf("thread %d running with %d tasks\n",params->thread_id, params->ntasks);
+  printf("thread %d running with %d tasks\n",my_thread_id, params->ntasks);
 
   while (!done)
   {
     done = TRUE;
     for (i=0; i<params->ntasks; ++i)
     {
-      printf("thread %d checking task %d\n",params->thread_id, my_tasks[i]->task_id);
+      printf("thread %d checking task %d\n",my_thread_id, my_tasks[i]->task_id);
       if (my_tasks[i]->done)
       {
-	printf("...task %d already done\n", my_tasks[i]->task_id);
+    	  printf("...task %d already done\n", my_tasks[i]->task_id);
       }
       else if ( ready_to_run(my_tasks[i]))
       {
-	printf("...marking task %d done\n", my_tasks[i]->task_id);
-	my_tasks[i]->done = TRUE;
+		  printf("Thread %d performed job %d\n", my_thread_id,my_tasks[i]->task_id);
+		  my_tasks[i]->done = TRUE;
       }
       done = done && (my_tasks[i]->done);
     }
     ///TODO what values should we pass here?
     thread_yield(0,0);
   }
-  printf("thread %d done.\n",params->thread_id);
+  printf("thread %d completed all jobs\n",my_thread_id);
 
   thread_term();
 }
-
-typedef struct
-{
-  unsigned ntasks, nthreads;
-  task_t* tasks;
-  worker_thread_params_t* thread_params;
-}app_data_t;
 
 static void
 load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks, unsigned ntasks)
@@ -99,8 +106,6 @@ load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks,
   assert (sscanf(buf, "%u : ", &thread_id) == 1);
 
   buf = strchr(buf, ':')+1;
-
-  assert(thread_id == thread_params->thread_id);
 
   thread_params->ntasks=0;
   token = strtok(buf,",");
@@ -183,26 +188,75 @@ app_data_t load_app_data(FILE* f)
   }
   for (i=0;i<ret.nthreads;++i)
   {
-    ret.thread_params[i].thread_id = i;
     load_thread_tasks(f, &ret.thread_params[i], ret.tasks, ret.ntasks);
   }
 
   return ret;
 }
 
+#define PROMPT "> "
+
+ui_cmd_t
+get_command(){
+	ui_cmd_t ret;
+
+	memset(ret.command, 0, MAX_CMD_LEN+1);
+	memset(ret.param, 0, FILENAME_MAX);
+
+	printf(PROMPT);
+	scanf("%4s %s", ret.command, ret.param);
+
+	return ret;
+}
+
 int app_main(int argc, char **argv) {
   app_data_t app_data;
-  thread_t *threads;
+  thread_t *threads = NULL;
+  ui_cmd_t cmd;
+  BOOL exit = FALSE;
   unsigned i;
 
-  ///TODO actually open a file
-  app_data = load_app_data(NULL);
-  threads = calloc(app_data.nthreads, sizeof(thread_t));
+  do{
+	  cmd = get_command();
+	  if (!strcmp("exit", cmd.command))
+	  {
+		  exit = TRUE;
+	  }
+	  else if (!strcmp("load", cmd.command))
+	  {
+		  FILE* file;
+		  assert(threads == NULL); //we currently don't support loading more then one file.
 
-  for (i=0;i<app_data.nthreads;++i)
-  {
-    create_thread(worker_thread,&app_data.thread_params[i]);
-  }
+		  file = fopen(cmd.param,"r");
+		  if (file == NULL)
+		  {
+			  printf("File not found %s\n", cmd.param);
+			  continue;
+		  }
+		  app_data = load_app_data(file);
+		  threads = calloc(app_data.nthreads, sizeof(thread_t));
+
+		  ///TODO need to pass something here...
+		  thread_manager_init(NULL);
+		  for (i=0;i<app_data.nthreads;++i)
+		  {
+			  create_thread(worker_thread,&app_data.thread_params[i]);
+		  }
+	  }
+	  else if (!strcmp("run", cmd.command))
+	  {
+		  if (threads == NULL)
+		  {
+			  printf("No data file loaded.\n");
+			  continue;
+		  }
+		  for (i=0;i<app_data.ntasks; ++i)
+		  {
+			  app_data.tasks[i].done = FALSE;
+		  }
+		  threads_start();
+	  }
+  }while (!exit);
 
   return 0;
 }
