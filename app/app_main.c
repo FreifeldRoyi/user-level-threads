@@ -21,7 +21,8 @@ typedef struct _task_t {
 typedef struct{
   task_t** my_tasks;
   unsigned ntasks;
-
+  unsigned* global_job_count;
+  unsigned job_wait;
 } worker_thread_params_t;
 
 typedef struct _ui_cmd_t{
@@ -60,6 +61,8 @@ void worker_thread(void* p)
   BOOL done = FALSE;
   int my_thread_id = current_thread_id();
   unsigned i;
+  unsigned job_count;
+  unsigned job_count_diff;
 
   printf("thread %d running with %d tasks\n",my_thread_id, params->ntasks);
 
@@ -76,12 +79,19 @@ void worker_thread(void* p)
       else if ( ready_to_run(my_tasks[i]))
       {
 		  printf("Thread %d performed job %d\n", my_thread_id,my_tasks[i]->task_id);
+		  ++(*params->global_job_count);
 		  my_tasks[i]->done = TRUE;
       }
       done = done && (my_tasks[i]->done);
     }
     ///TODO what values should we pass here?
+    job_count = *params->global_job_count;
     thread_yield(0,0);
+    job_count_diff = *params->global_job_count - job_count;
+    if (job_count_diff > params->job_wait)
+    {
+    	params->job_wait = job_count_diff;
+    }
   }
   printf("thread %d completed all jobs\n",my_thread_id);
 
@@ -181,6 +191,9 @@ app_data_t load_app_data(FILE* f)
   ret.tasks = calloc(ret.ntasks, sizeof(task_t));
   ret.thread_params = calloc(ret.nthreads, sizeof(worker_thread_params_t));
 
+  memset(ret.tasks, 0, ret.ntasks * sizeof(task_t));
+  memset(ret.thread_params, 0, ret.nthreads * sizeof(worker_thread_params_t));
+
   for (i=0;i<ret.ntasks;++i)
   {
     ret.tasks[i].task_id = i;
@@ -215,6 +228,7 @@ int app_main(int argc, char **argv) {
   ui_cmd_t cmd;
   BOOL exit = FALSE;
   unsigned i;
+  unsigned job_count = 0;
 
   do{
 	  cmd = get_command();
@@ -240,6 +254,7 @@ int app_main(int argc, char **argv) {
 		  thread_manager_init(NULL);
 		  for (i=0;i<app_data.nthreads;++i)
 		  {
+			  app_data.thread_params[i].global_job_count = &job_count;
 			  create_thread(worker_thread,&app_data.thread_params[i]);
 		  }
 	  }

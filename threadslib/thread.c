@@ -93,7 +93,7 @@ manager_thread_func(void* ptr)
 		//the thread to run is not part of the scheduler now. we update the stats
 		//of all the others.
 		sched_for_all_threads(param->sched, &update_switch_count);
-		++global_stats->switches;
+		++global_stats.switches;
 
 		cur_thread->state = tsRunning;
 		mctx_save(manager_thread->cont);
