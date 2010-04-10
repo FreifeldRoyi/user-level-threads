@@ -12,9 +12,12 @@
 
 #define THREAD(x) ((thread_t*) (x))
 
+enum thread_state_t {tsRunning, tsFinished} ;
+
 typedef struct thread
 {
 	ucontext_t cont;
+	enum thread_state_t state;
 } thread_t;
 
 /**

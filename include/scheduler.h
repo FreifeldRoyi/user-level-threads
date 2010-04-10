@@ -9,7 +9,7 @@
 
 #include "thread.h"
 
-typedef struct sched_t;
+struct sched_t;
 
 /**
  * Defining a new scheduler
