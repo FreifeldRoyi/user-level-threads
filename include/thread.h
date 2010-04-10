@@ -11,6 +11,7 @@
 #include <ucontext.h>
 
 #define THREAD(x) ((thread_t*) (x))
+#define THREAD_STATS(x) THREAD((x)) -> stats
 
 enum thread_state_t {tsRunning, tsFinished} ;
 
@@ -29,6 +30,7 @@ typedef struct thread
 	ucontext_t cont;
 	enum thread_state_t state;
 	thread_stats_t stats;
+	int ID;
 } thread_t;
 
 /**

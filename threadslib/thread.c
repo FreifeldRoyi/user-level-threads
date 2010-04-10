@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#define MAX_STACK_SIZE 4000
+#define MAX_THREAD_COUNT 4096
+
 typedef struct _manager_thread_params_t
 {
 	struct sched_t* sched;
@@ -22,6 +25,8 @@ typedef struct _global_stats_t
 
 thread_t* cur_thread = NULL;
 thread_t* manager_thread = NULL;
+thread_t* thread_container[MAX_THREAD_COUNT];
+int next_thread = -1;
 global_stats_t global_stats = {0};
 
 /* save machine context */
@@ -47,7 +52,26 @@ void mctx_create(ucontext_t *uctx, void (*sf_addr)( ), void *sf_arg, void *sk_ad
 
 int create_thread(void(*sf_addr)(), void* sf_arg)
 {
+	int toReturn = -1;
+	ucontext_t* cont = NULL;
 
+	if (next_thread < MAX_THREAD_COUNT)
+	{
+		thread_t* toAdd = (thread_t*)malloc(sizeof(thread_t));
+		size_t size = MAX_STACK_SIZE;
+		assert(toAdd != NULL);
+		toReturn = next_thread;
+		mctx_create(cont, sf_addr, sf_arg, malloc(MAX_STACK_SIZE),size);
+		toAdd -> cont = *cont;
+		toAdd -> state = tsFinished;
+		toAdd -> stats.max_switches_wait = 0;
+		toAdd -> stats.cur_switches_wait = 0;
+		toAdd -> ID = next_thread;
+		thread_container[next_thread] = toAdd;
+		++next_thread;
+	}
+
+	return toReturn;
 }
 
 void
@@ -140,3 +164,22 @@ unsigned thread_stats(unsigned request_stats)
 	}
 }
 
+void thread_manager_init(void* arg)
+{
+	if (next_thread <= -1)
+	{
+		next_thread = 0;
+	}
+
+	/* TODO Do your magic here Tom*/
+}
+
+int current_thread_id()
+{
+	int toReturn = -1;
+
+	if (cur_thread != NULL)
+		toReturn = cur_thread -> ID;
+
+	return toReturn;
+}
