@@ -26,6 +26,10 @@ int sched_add_thread(struct sched_t* schd, thread_t* thrd);
  */
 thread_t* sched_next_thread(struct sched_t* schd);
 
+/**call a function on all scheduled threads. with a given argument.
+ * */
+void sched_for_all_threads(struct sched_t* sched, void(*func)(thread_t*));
+
 /**
  * Deallocate the memory for the scheduler
  */

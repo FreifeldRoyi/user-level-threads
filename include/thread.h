@@ -14,10 +14,17 @@
 
 enum thread_state_t {tsRunning, tsFinished} ;
 
+typedef struct _thread_stats_t
+{
+	unsigned max_switches_wait;
+	unsigned cur_switches_wait;
+}thread_stats_t;
+
 typedef struct thread
 {
 	ucontext_t cont;
 	enum thread_state_t state;
+	thread_stats_t stats;
 } thread_t;
 
 /**

@@ -14,9 +14,14 @@ typedef struct _manager_thread_params_t
 	struct sched_t* sched;
 }manager_thread_params_t;
 
-thread_t* cur_thread;
-thread_t* manager_thread;
+typedef struct _global_stats_t
+{
+	unsigned switches;
+}global_stats_t;
 
+thread_t* cur_thread = NULL;
+thread_t* manager_thread = NULL;
+global_stats_t global_stats = {0};
 
 /* save machine context */
 #define mctx_save(_uctx) (void)getcontext(&_uctx)
@@ -63,6 +68,15 @@ thread_yield(int pInfo, int statInfo)
 	}
 }
 
+void update_switch_count(thread_t* thread)
+{
+	++thread->stats.cur_switches_wait;
+	if (thread->stats.cur_switches_wait > thread->stats.max_switches_wait)
+	{
+		thread->stats.max_switches_wait = thread->stats.cur_switches_wait;
+	}
+}
+
 void
 manager_thread_func(void* ptr)
 {
@@ -73,7 +87,13 @@ manager_thread_func(void* ptr)
 		while ( (cur_thread = sched_next_thread(param->sched)) == NULL)
 		{
 			/*if there is no thread to run, wait until there is...*/
+			///TODO this is probably wrong. the manager should exit here.
 		}
+
+		//the thread to run is not part of the scheduler now. we update the stats
+		//of all the others.
+		sched_for_all_threads(param->sched, &update_switch_count);
+		++global_stats->switches;
 
 		cur_thread->state = tsRunning;
 		mctx_save(manager_thread->cont);
@@ -85,7 +105,11 @@ manager_thread_func(void* ptr)
 		{
 			mctx_restore(&cur_thread->cont);
 		}
-		//otherwise we return to the top of the loop and run another thread.
+		else
+		{
+			//return the thread that yielded to the scheduler.
+			sched_add_thread(param->sched, cur_thread);
+		}
 	}
 }
 

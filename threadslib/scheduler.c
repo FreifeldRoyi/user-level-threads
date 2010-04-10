@@ -17,6 +17,17 @@ typedef struct sched_t
 	queue_t* fifo_sched;
 } sched_t;
 
+void sched_for_all_threads(sched_t* sched, void(*func)(thread_t*))
+{
+	///TODO this is disgusting. we need to add a queue_for_all_nodes function.
+	node_t* node = sched->fifo_sched->head;
+	while (node != NULL)
+	{
+		func(node->data);
+		node = node->next;
+	}
+}
+
 struct sched_t* sched_init()
 {
 	sched_t* toReturn = (sched_t*)malloc(sizeof(sched_t));
