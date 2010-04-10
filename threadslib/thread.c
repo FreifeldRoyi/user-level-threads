@@ -8,6 +8,7 @@
 #include "include/thread.h"
 #include "include/scheduler.h"
 #include <stdlib.h>
+#include <assert.h>
 
 typedef struct _manager_thread_params_t
 {
@@ -110,6 +111,32 @@ manager_thread_func(void* ptr)
 			//return the thread that yielded to the scheduler.
 			sched_add_thread(param->sched, cur_thread);
 		}
+	}
+}
+
+unsigned thread_stats(unsigned request_stats)
+{
+	unsigned tid;
+	if (request_stats & THREAD_NONGLOBAL_STATS)
+	{
+		tid = request_stats & ~THREAD_NONGLOBAL_STATS;
+		///TODO find the specific stats for the thread with the proper tid.
+		return 0;
+	}
+
+	switch(request_stats)
+	{
+	case THREAD_STAT_MAX_SWITCHES:
+	{
+		///TODO go over all threads and find the maximal value
+		return 0;
+	}break;
+	case THREAD_STAT_TOTAL_SWITCHES:
+	{
+		return global_stats.switches;
+	}break;
+	default:
+		assert(0);
 	}
 }
 

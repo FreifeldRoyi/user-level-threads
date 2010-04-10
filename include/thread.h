@@ -14,6 +14,10 @@
 
 enum thread_state_t {tsRunning, tsFinished} ;
 
+#define THREAD_NONGLOBAL_STATS 0x80000000
+#define THREAD_STAT_TOTAL_SWITCHES 0x00000001
+#define THREAD_STAT_MAX_SWITCHES   0x00000002
+
 typedef struct _thread_stats_t
 {
 	unsigned max_switches_wait;
@@ -66,5 +70,16 @@ void threads_start();
  * Returns the ID of the currently running thread.
  */
 int current_thread_id();
+
+
+/**get statistics about a thread or all the threads.
+ *
+ * to get an individual thread's switches_wait value, you need to
+ * OR the thread_id with THREAD_NONGLOBAL_STATS and pass the result as request_stats.
+ *
+ * otherwise pass either THREAD_STAT_TOTAL_SWITCHES or THREAD_STAT_MAX_SWITCHES to get
+ * global stats.
+ * */
+unsigned thread_stats(unsigned request_stats);
 
 #endif /* THREAD_H_ */
