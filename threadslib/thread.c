@@ -9,6 +9,7 @@
 #include "include/scheduler.h"
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #define MAX_STACK_SIZE 4000
 #define MAX_THREAD_COUNT 4096
@@ -23,11 +24,10 @@ typedef struct _global_stats_t
 	unsigned switches;
 }global_stats_t;
 
-thread_t* cur_thread = NULL;
-thread_t* manager_thread = NULL;
-thread_t* thread_container[MAX_THREAD_COUNT];
-int next_thread = -1;
-global_stats_t global_stats = {0};
+static thread_t* cur_thread = NULL;
+static thread_t* manager_thread = NULL;
+static thread_t* thread_container[MAX_THREAD_COUNT];
+static global_stats_t global_stats = {0};
 
 /* save machine context */
 #define mctx_save(_uctx) (void)getcontext(&_uctx)
@@ -50,28 +50,36 @@ void mctx_create(ucontext_t *uctx, void (*sf_addr)( ), void *sf_arg, void *sk_ad
         return;
 }
 
+static thread_t*
+allocate_thread(void(*sf_addr)(), void* sf_arg)
+{
+	thread_t* ret = (thread_t*)malloc(sizeof(thread_t));
+
+	assert(ret != NULL);
+	mctx_create(&ret->cont, sf_addr, sf_arg, malloc(MAX_STACK_SIZE),MAX_STACK_SIZE);
+	ret -> state = tsFinished;
+	ret -> stats.max_switches_wait = 0;
+	ret -> stats.cur_switches_wait = 0;
+
+	return ret;
+}
+
 int create_thread(void(*sf_addr)(), void* sf_arg)
 {
-	int toReturn = -1;
-	ucontext_t* cont = NULL;
+	int tid = 0;
 
-	if (next_thread < MAX_THREAD_COUNT)
+	while ((tid < MAX_THREAD_COUNT) && (thread_container[tid] != NULL))
 	{
-		thread_t* toAdd = (thread_t*)malloc(sizeof(thread_t));
-		size_t size = MAX_STACK_SIZE;
-		assert(toAdd != NULL);
-		toReturn = next_thread;
-		mctx_create(cont, sf_addr, sf_arg, malloc(MAX_STACK_SIZE),size);
-		toAdd -> cont = *cont;
-		toAdd -> state = tsFinished;
-		toAdd -> stats.max_switches_wait = 0;
-		toAdd -> stats.cur_switches_wait = 0;
-		toAdd -> ID = next_thread;
-		thread_container[next_thread] = toAdd;
-		++next_thread;
+		++tid;
 	}
+	if (tid == MAX_THREAD_COUNT)
+		return -1;
 
-	return toReturn;
+	thread_t* toAdd = allocate_thread(sf_addr, sf_arg);
+	toAdd->ID = tid;
+	thread_container[tid] = toAdd;
+
+	return tid;
 }
 
 void
@@ -132,8 +140,17 @@ manager_thread_func(void* ptr)
 		}
 		else
 		{
-			//return the thread that yielded to the scheduler.
-			sched_add_thread(param->sched, cur_thread);
+			if (thread_container[cur_thread->ID] == NULL)
+			{
+				//the current thread called thread_term and is marked for removal.
+				free(cur_thread);
+				cur_thread = NULL;
+			}
+			else
+			{
+				//return the thread that yielded to the scheduler.
+				sched_add_thread(param->sched, cur_thread);
+			}
 		}
 	}
 }
@@ -144,16 +161,21 @@ unsigned thread_stats(unsigned request_stats)
 	if (request_stats & THREAD_NONGLOBAL_STATS)
 	{
 		tid = request_stats & ~THREAD_NONGLOBAL_STATS;
-		///TODO find the specific stats for the thread with the proper tid.
-		return 0;
+		assert(thread_container[tid]!=NULL);
+		return thread_container[tid]->stats.max_switches_wait;
 	}
 
 	switch(request_stats)
 	{
 	case THREAD_STAT_MAX_SWITCHES:
 	{
-		///TODO go over all threads and find the maximal value
-		return 0;
+		unsigned max = 0;
+		for (tid = 0; tid<MAX_THREAD_COUNT; ++tid)
+		{
+			if ((thread_container[tid] != NULL)&&(max < thread_container[tid]->stats.max_switches_wait))
+				max = thread_container[tid]->stats.max_switches_wait;
+		}
+		return max;
 	}break;
 	case THREAD_STAT_TOTAL_SWITCHES:
 	{
@@ -164,14 +186,28 @@ unsigned thread_stats(unsigned request_stats)
 	}
 }
 
+///TODO need to get a context to return to when the manager thread is done.
 void thread_manager_init(void* arg)
 {
-	if (next_thread <= -1)
-	{
-		next_thread = 0;
-	}
+	manager_thread_params_t* params = malloc(sizeof(manager_thread_params_t));
 
-	/* TODO Do your magic here Tom*/
+	memset(thread_container, 0, MAX_THREAD_COUNT*sizeof(thread_t*));
+
+	params->sched = arg;
+	manager_thread = allocate_thread(manager_thread_func, params);
+}
+
+void threads_start()
+{
+	global_stats.switches = 0;
+	manager_thread->state = tsRunning;
+	mctx_restore(&manager_thread->cont);
+}
+
+void thread_term()
+{
+	thread_container[cur_thread->ID] = NULL;
+	thread_yield(0,0);
 }
 
 int current_thread_id()

@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "include/app_util.h"
+#include "include/scheduler.h"
 
 #define MAX_CMD_LEN 4
 
@@ -153,8 +154,7 @@ do_load(ui_cmd_t* cmd, app_data_t* app_data)
 	*app_data = load_app_data(file);
 	app_data->threads = calloc(app_data->nthreads, sizeof(thread_t));
 
-	///TODO need to pass something here...
-	thread_manager_init(NULL);
+	thread_manager_init(sched_init());
 	for (i=0;i<app_data->nthreads;++i)
 	{
 	  app_data->thread_params[i].global_job_count = &app_data->job_count;
