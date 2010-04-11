@@ -28,6 +28,7 @@ static thread_t* cur_thread = NULL;
 static thread_t* manager_thread = NULL;
 static thread_t* thread_container[MAX_THREAD_COUNT];
 static global_stats_t global_stats = {0};
+static ucontext_t return_context;
 
 /* save machine context */
 #define mctx_save(_uctx) (void)getcontext(&_uctx)
@@ -119,8 +120,8 @@ manager_thread_func(void* ptr)
 	{
 		while ( (cur_thread = sched_next_thread(param->sched)) == NULL)
 		{
-			/*if there is no thread to run, wait until there is...*/
-			///TODO this is probably wrong. the manager should exit here.
+			manager_thread->state = tsFinished;
+			mctx_restore(&return_context);
 		}
 
 		//the thread to run is not part of the scheduler now. we update the stats
@@ -201,7 +202,18 @@ void threads_start()
 {
 	global_stats.switches = 0;
 	manager_thread->state = tsRunning;
-	mctx_restore(&manager_thread->cont);
+	mctx_save(return_context);
+/*When the manager thread is done it will set it's state to tsFinished and
+ * restore our context.
+ * */
+	if (manager_thread->state == tsRunning)
+	{
+		mctx_restore(&manager_thread->cont);
+	}
+	else
+	{
+		return;
+	}
 }
 
 void thread_term()
