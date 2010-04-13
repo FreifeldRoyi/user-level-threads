@@ -6,6 +6,8 @@
  */
 #include "include/queue.h"
 #include "tests/include/test_threads.h"
+#include "include/thread.h"
+#include <stdio.h>
 
 int main()
 {
@@ -14,8 +16,9 @@ int main()
 	{
 		for (nyields=0; nyields<10; ++nyields)
 		{
-			threads_test_case(10,10);
+			threads_test_case(nthreads, nyields);
 		}
 	}
+	printf("total switches: %d, max switches: %d\n", thread_stats(THREAD_STAT_TOTAL_SWITCHES), thread_stats(THREAD_STAT_TOTAL_SWITCHES));
 	return 0;
 }
