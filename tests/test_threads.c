@@ -16,10 +16,9 @@ void test_thread(void* p)
 	{
 		assert(*param->global_counter == (current_thread_id() + param->nthreads*i));
 		++(*param->global_counter);
+		printf("thread %d yielding.\n", current_thread_id());
 		thread_yield(0,0);
 	}
-
-	assert(*param->global_counter == (current_thread_id() + param->nthreads*param->num_yields));
 
 	printf("thread %d terminating. global counter is %d.\n", current_thread_id(), *param->global_counter);
 
