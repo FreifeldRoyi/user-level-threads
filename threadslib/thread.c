@@ -24,7 +24,8 @@ typedef struct _manager_thread_params_t
 
 typedef struct _global_stats_t
 {
-	unsigned switches;
+	unsigned total_switches;
+	unsigned max_switches_wait;
 }global_stats_t;
 
 static thread_t* cur_thread = NULL;
@@ -116,6 +117,10 @@ void update_switch_count(thread_t* thread)
 	{
 		thread->stats.max_switches_wait = thread->stats.cur_switches_wait;
 	}
+	if (thread->stats.max_switches_wait > global_stats.max_switches_wait)
+	{
+		global_stats.max_switches_wait = thread->stats.max_switches_wait;
+	}
 }
 
 void
@@ -123,7 +128,7 @@ manager_thread_func(void* ptr)
 {
 	manager_thread_params_t* param = (manager_thread_params_t*)ptr;
 
-	printf("manager thread started.\n");
+//	printf("manager thread started.\n");
 	while (1)
 	{
 		while ( (cur_thread = sched_next_thread(param->sched)) == NULL)
@@ -135,7 +140,7 @@ manager_thread_func(void* ptr)
 		//the thread to run is not part of the scheduler now. we update the stats
 		//of all the others.
 		sched_for_all_threads(param->sched, &update_switch_count);
-		++global_stats.switches;
+		++global_stats.total_switches;
 
 		cur_thread->state = tsRunning;
 		mctx_save(manager_thread->cont);
@@ -145,7 +150,8 @@ manager_thread_func(void* ptr)
 	 */
 		if (cur_thread->state == tsRunning)
 		{
-			printf("manager: restoring thread %d\n", cur_thread->ID);
+//			printf("manager: restoring thread %d\n", cur_thread->ID);
+			cur_thread->stats.cur_switches_wait = 0;
 			mctx_restore(&cur_thread->cont);
 		}
 		else
@@ -179,24 +185,17 @@ unsigned thread_stats(unsigned request_stats)
 	{
 	case THREAD_STAT_MAX_SWITCHES:
 	{
-		unsigned max = 0;
-		for (tid = 0; tid<MAX_THREAD_COUNT; ++tid)
-		{
-			if ((thread_container[tid] != NULL)&&(max < thread_container[tid]->stats.max_switches_wait))
-				max = thread_container[tid]->stats.max_switches_wait;
-		}
-		return max;
+		return global_stats.max_switches_wait;
 	}break;
 	case THREAD_STAT_TOTAL_SWITCHES:
 	{
-		return global_stats.switches;
+		return global_stats.total_switches;
 	}break;
 	default:
 		assert(0);
 	}
 }
 
-///TODO need to get a context to return to when the manager thread is done.
 void thread_manager_init(void* arg)
 {
 	manager_thread_params_t* params = malloc(sizeof(manager_thread_params_t));
@@ -210,7 +209,7 @@ void thread_manager_init(void* arg)
 
 void threads_start()
 {
-	global_stats.switches = 0;
+	memset(&global_stats,0,sizeof(global_stats));
 	manager_thread->state = tsRunning;
 	mctx_save(return_context);
 /*When the manager thread is done it will set it's state to tsFinished and
