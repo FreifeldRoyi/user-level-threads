@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
+
+#include <stdio.h>
 
 #define MAX_STACK_SIZE 4000
 #define MAX_THREAD_COUNT 4096
@@ -28,13 +31,14 @@ static thread_t* cur_thread = NULL;
 static thread_t* manager_thread = NULL;
 static thread_t* thread_container[MAX_THREAD_COUNT];
 static global_stats_t global_stats = {0};
+static struct sched_t* sched = NULL;
 static ucontext_t return_context;
 
 /* save machine context */
-#define mctx_save(_uctx) (void)getcontext(&_uctx)
+#define mctx_save(_uctx) assert(getcontext(&_uctx) >= 0)
 
 /* restore machine context */
-#define mctx_restore(_uctx) (void)setcontext(_uctx)
+#define mctx_restore(_uctx) assert(setcontext(_uctx) >= 0)
 
 /* create machine context which can later be used to save & restore threads */
 void mctx_create(ucontext_t *uctx, void (*sf_addr)( ), void *sf_arg, void *sk_addr, size_t sk_size)
@@ -42,12 +46,13 @@ void mctx_create(ucontext_t *uctx, void (*sf_addr)( ), void *sf_arg, void *sk_ad
         /* fetch current context */
         getcontext(uctx);
         /* adjust to new context */
-        uctx->uc_link = NULL;
+        uctx->uc_link = sf_addr; ///TODO why is this assignment needed?
         uctx->uc_stack.ss_sp = sk_addr;
         uctx->uc_stack.ss_size = sk_size;
         uctx->uc_stack.ss_flags = 0;
         /* make new context */
         makecontext(uctx, sf_addr, 1, sf_arg);
+        assert(errno == 0);
         return;
 }
 
@@ -79,6 +84,8 @@ int create_thread(void(*sf_addr)(), void* sf_arg)
 	thread_t* toAdd = allocate_thread(sf_addr, sf_arg);
 	toAdd->ID = tid;
 	thread_container[tid] = toAdd;
+
+	sched_add_thread(sched, toAdd);
 
 	return tid;
 }
@@ -116,6 +123,7 @@ manager_thread_func(void* ptr)
 {
 	manager_thread_params_t* param = (manager_thread_params_t*)ptr;
 
+	printf("manager thread started.\n");
 	while (1)
 	{
 		while ( (cur_thread = sched_next_thread(param->sched)) == NULL)
@@ -137,6 +145,7 @@ manager_thread_func(void* ptr)
 	 */
 		if (cur_thread->state == tsRunning)
 		{
+			printf("manager: restoring thread %d\n", cur_thread->ID);
 			mctx_restore(&cur_thread->cont);
 		}
 		else
@@ -194,6 +203,7 @@ void thread_manager_init(void* arg)
 
 	memset(thread_container, 0, MAX_THREAD_COUNT*sizeof(thread_t*));
 
+	sched = arg;
 	params->sched = arg;
 	manager_thread = allocate_thread(manager_thread_func, params);
 }
