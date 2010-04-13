@@ -5,9 +5,11 @@
  *      Author: freifeldroyi
  */
 #include "include/queue.h"
+#include "tests/include/test_threads.h"
 
 int main()
 {
-	run_tests();
+//	run_tests();
+	threads_test_case(1,0);
 	return 0;
 }
