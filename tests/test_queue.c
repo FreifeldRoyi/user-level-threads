@@ -9,6 +9,7 @@
 #define TEST_QUEUE_C_
 
 #include "include/queue.h"
+#include "include/test_queue.h"
 #include <stdio.h>
 
 /**
@@ -72,9 +73,9 @@ int test_queue_pop()
 	//push testing1
 	queue_push(t_qu,t_nd1);
 
-	if (QUEUE_HEAD(t_qu) != t_nd1)
+	if (NODE_DATA(QUEUE_HEAD(t_qu)) != t_nd1)
 		toReturn = err_number(toReturn, -1);
-	if (QUEUE_TAIL(t_qu) != t_nd1)
+	if (NODE_DATA(QUEUE_HEAD(t_qu)) != t_nd1)
 		toReturn = err_number(toReturn, -2);
 	if (QUEUE_SIZE(t_qu) != 1)
 		toReturn = err_number(toReturn, -3);
@@ -82,35 +83,35 @@ int test_queue_pop()
 	//push testing2
 	queue_push(t_qu,t_nd2);
 
-	if (QUEUE_HEAD(t_qu) != t_nd1)
+	if (NODE_DATA(QUEUE_HEAD(t_qu)) != t_nd1)
 		toReturn = err_number(toReturn, -1);
-	if (QUEUE_TAIL(t_qu) != t_nd2)
+	if (NODE_DATA(QUEUE_TAIL(t_qu)) != t_nd2)
 		toReturn = err_number(toReturn, -2);
 	if (QUEUE_SIZE(t_qu) != 2)
 		toReturn = err_number(toReturn, -3);
-	if (NODE_NEXT(QUEUE_HEAD(t_qu)) != t_nd2)
+	if (NODE_DATA(NODE_NEXT(QUEUE_HEAD(t_qu))) != t_nd2)
 		toReturn = err_number(toReturn, -4);
 
 	//push testing3
 	queue_push(t_qu,t_nd3);
 
-	if (QUEUE_HEAD(t_qu) != t_nd1)
+	if (NODE_DATA(QUEUE_HEAD(t_qu)) != t_nd1)
 		toReturn = err_number(toReturn, -1);
-	if (QUEUE_TAIL(t_qu) != t_nd3)
+	if (NODE_DATA(QUEUE_TAIL(t_qu)) != t_nd3)
 		toReturn = err_number(toReturn, -2);
 	if (QUEUE_SIZE(t_qu) != 3)
 		toReturn = err_number(toReturn, -3);
-	if (NODE_NEXT(QUEUE_HEAD(t_qu)) != t_nd2)
+	if (NODE_DATA(NODE_NEXT(QUEUE_HEAD(t_qu))) != t_nd2) //NODE_NEXT(QUEUE_HEAD(t_qu))
 		toReturn = err_number(toReturn, -4);
-	if (NODE_NEXT(NODE_NEXT(QUEUE_HEAD(t_qu))) != t_nd3)
+	if (NODE_DATA(NODE_NEXT(NODE_NEXT(QUEUE_HEAD(t_qu)))) != t_nd3) //NODE_NEXT(NODE_NEXT(QUEUE_HEAD(t_qu)))
 		toReturn = err_number(toReturn, -4);
 
 	//pop testing1
 	queue_pop(t_qu);
 
-	if (QUEUE_HEAD(t_qu) != t_nd2)
+	if (NODE_DATA(QUEUE_HEAD(t_qu)) != t_nd2)
 		toReturn = err_number(toReturn, -5);
-	if (QUEUE_TAIL(t_qu) != t_nd3)
+	if (NODE_DATA(QUEUE_TAIL(t_qu)) != t_nd3)
 		toReturn = err_number(toReturn, -6);
 	if (QUEUE_SIZE(t_qu) != 2)
 		toReturn = err_number(toReturn, -7);
@@ -118,9 +119,9 @@ int test_queue_pop()
 	//pop testing2
 	queue_pop(t_qu);
 
-	if (QUEUE_HEAD(t_qu) != t_nd3)
+	if (NODE_DATA(QUEUE_HEAD(t_qu)) != t_nd3)
 		toReturn = err_number(toReturn, -5);
-	if (QUEUE_TAIL(t_qu) != t_nd3)
+	if (NODE_DATA(QUEUE_TAIL(t_qu)) != t_nd3)
 		toReturn = err_number(toReturn, -6);
 	if (QUEUE_SIZE(t_qu) != 1)
 		toReturn = err_number(toReturn, -7);
