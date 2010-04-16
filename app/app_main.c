@@ -1,17 +1,6 @@
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 
-#include "include/app_util.h"
-#include "include/scheduler.h"
 
-#define MAX_CMD_LEN 4
-
-typedef struct _ui_cmd_t{
-	char command[MAX_CMD_LEN+1];
-	char param[FILENAME_MAX];
-}ui_cmd_t;
+#include "include/app_main.h"
 
 static void
 load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks, unsigned ntasks)
@@ -121,8 +110,6 @@ app_data_t load_app_data(FILE* f)
 
   return ret;
 }
-
-#define PROMPT "> "
 
 ui_cmd_t
 get_command(){

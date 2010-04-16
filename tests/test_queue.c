@@ -160,7 +160,7 @@ int test_node_delete()
 	return toReturn;
 }
 
-void run_tests ()
+void run_queue_tests ()
 {
 	printf("test initialize result is: %d\n",test_creation()); // should be 0
 	printf("test node creation result is: %d\n",test_node_creation()); // should be 1

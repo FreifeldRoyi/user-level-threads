@@ -28,14 +28,14 @@ void worker_thread(void* p)
   unsigned job_count;
   unsigned job_count_diff;
 
-  printf("thread %d running with %d tasks\n",my_thread_id, params->ntasks);
+  printf("Thread %d running with %d tasks\n",my_thread_id, params->ntasks);
 
   while (!done)
   {
     done = TRUE;
     for (i=0; i<params->ntasks; ++i)
     {
-      printf("thread %d checking task %d\n",my_thread_id, my_tasks[i]->task_id);
+      printf("Thread %d checking task %d\n",my_thread_id, my_tasks[i]->task_id);
       if (my_tasks[i]->done)
       {
     	  printf("...task %d already done\n", my_tasks[i]->task_id);
@@ -57,7 +57,7 @@ void worker_thread(void* p)
     	params->job_wait = job_count_diff;
     }
   }
-  printf("thread %d completed all jobs\n",my_thread_id);
+  printf("Thread %d completed all jobs\n",my_thread_id);
 
   thread_term();
 }

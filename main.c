@@ -8,6 +8,7 @@
 #include "tests/include/test_threads.h"
 #include "tests/include/test_queue.h"
 #include "include/thread.h"
+#include "tests/include/test_app.h"
 #include <stdio.h>
 #include <assert.h>
 
@@ -16,9 +17,14 @@
 
 int main()
 {
-	run_tests();
+	run_app_tests();
 
 	return 0;
+}
+
+void queue_tests()
+{
+	run_queue_tests();
 }
 
 int thread_test()
@@ -44,4 +50,5 @@ int thread_test()
 				assert( max_switches == expected_max_switches);
 			}
 		}
+		return 0;
 }
