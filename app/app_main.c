@@ -1,18 +1,23 @@
-
-
 #include "include/app_main.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#define DUMP(_x) printf("%s[%d] %s=%d\n",__FILE__,__LINE__, #_x, _x)
-
-int
+/**Count the appearances of a character in a string.
+ *
+ * @param str the string. Must not be NULL.
+ * @param chr the character to count in str
+ *
+ * @return the number of times that chr appears in str.
+ * */
+static int
 strcnt(const char* str, char chr)
 {
 	const char* cur = str;
 	int ret = 0;
+
+	assert(str != NULL);
 
 	while (*cur != '\0')
 	{
@@ -24,7 +29,6 @@ strcnt(const char* str, char chr)
 	}
 	return ret;
 }
-
 
 ui_cmd_t
 get_command(){
@@ -45,6 +49,11 @@ get_command(){
 	return ret;
 }
 
+/** Create the threads that are used in the app. This function must be called before
+ * call to start_threads.
+ *
+ * @param app_data the state of the app
+ * */
 static void
 initialize_threads(app_data_t* app_data)
 {
@@ -117,6 +126,9 @@ do_run(ui_cmd_t* cmd, app_data_t* app_data)
 	return TRUE;
 }
 
+/**Return a numeric representation of cmd.param and make sure it's a valid
+ * thread ID. If it's not, -1 is returned and the proper error message is printed.
+ * */
 static int
 validate_tid_param(ui_cmd_t* cmd, app_data_t* app_data)
 {
