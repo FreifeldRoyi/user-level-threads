@@ -141,6 +141,8 @@ app_data_t load_app_data(FILE* f)
     load_thread_tasks(f, &ret.thread_params[i], ret.tasks, ret.ntasks);
   }
 
+  ret.loaded = TRUE;
+
   return ret;
 }
 
@@ -163,13 +165,34 @@ get_command(){
 	return ret;
 }
 
+static void
+initialize_threads(app_data_t* app_data)
+{
+	int i;
+
+	app_data->sched = sched_init(stPrio);
+
+	thread_manager_init(app_data->sched);
+	for (i=0;i<app_data->nthreads;++i)
+	{
+	  app_data->thread_params[i].global_job_count = &app_data->job_count;
+	  app_data->thread_params[i].policy = &app_data->policy;
+	  create_thread(worker_thread,&app_data->thread_params[i]);
+	}
+
+	app_data->initialized = TRUE;
+}
+
 BOOL
 do_load(ui_cmd_t* cmd, app_data_t* app_data)
 {
 	FILE* file;
-	int i;
 
-	assert(!app_data->initialized); //we don't support loading more then once.
+	if (app_data->loaded)
+	{
+		printf("Already loaded.\n");
+		return FALSE;
+	}
 
 	file = fopen(cmd->param,"r");
 	if (file == NULL)
@@ -177,16 +200,9 @@ do_load(ui_cmd_t* cmd, app_data_t* app_data)
 	  printf("File not found %s\n", cmd->param);
 	  return FALSE;
 	}
-	*app_data = load_app_data(file);
-	app_data->sched = sched_init(stFifo);
 
-	thread_manager_init(app_data->sched);
-	for (i=0;i<app_data->nthreads;++i)
-	{
-	  app_data->thread_params[i].global_job_count = &app_data->job_count;
-	  create_thread(worker_thread,&app_data->thread_params[i]);
-	}
-	app_data->initialized = TRUE;
+	*app_data = load_app_data(file);
+	initialize_threads(app_data);
 
 	fclose(file);
 	return TRUE;
@@ -196,11 +212,19 @@ BOOL
 do_run(ui_cmd_t* cmd, app_data_t* app_data)
 {
 	int i;
+
+	if (!app_data->loaded)
+	{
+		printf("Must call 'load' before 'run'.\n");
+		return FALSE;
+	}
 	if (!app_data->initialized)
 	{
-	  printf("No data file loaded.\n");
-	  return FALSE;
+		initialize_threads(app_data);
 	}
+
+	app_data->policy = atoi(cmd->param); //if param is empty, 0 is returned which is spDefault.
+
 	app_data->job_count = 0;
 	for (i=0;i<app_data->ntasks; ++i)
 	{
@@ -208,6 +232,8 @@ do_run(ui_cmd_t* cmd, app_data_t* app_data)
 	}
 	threads_start();
 	printf("All threads terminated.\n");
+
+	app_data->initialized = FALSE;
 	return TRUE;
 }
 
@@ -360,8 +386,8 @@ int app_main(int argc, char **argv) {
   BOOL exit = FALSE;
 
   app_data.tasks = NULL;
-
   app_data.initialized = FALSE;
+  app_data.loaded = FALSE;
 
   do{
 	  cmd = get_command();

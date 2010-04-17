@@ -30,7 +30,7 @@ thread_t* prio_sched_next_thread(struct sched_t* schd)
 	queue_t** schd_queue = SCHED_QUEUE(schd);
 	int i = 0;
 
-	while (queue_size(schd_queue[i]) == 0)
+	while ((i<LOWEST_PRIO) && (queue_size(schd_queue[i]) == 0))
 		++i;
 
 	if (i < LOWEST_PRIO)

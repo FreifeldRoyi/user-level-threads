@@ -38,6 +38,45 @@ ready_to_run(task_t* task)
   return TRUE;
 }
 
+/*
+ * spSpecial scheduling policy description:
+ * the more dependencies a thread's job has, the lower it's priority will be (because more threads
+ * have to run before it in order for it to have a possibility to perform any work).
+ * also, to avoid starvation, we'll add the number of times this thread has run before to it's priority,
+ * so that at some point some other thread will run.
+ */
+
+static unsigned
+calculate_prio(worker_thread_params_t* thread_params, int completed)
+{
+	switch(*thread_params->policy)
+	{
+	case spDefault: /*...is the same as spFifo*/
+	case spFifo:
+		return 0;
+		break;
+	case spPrio:
+	{
+		if (completed == 0)
+		{
+			return PRIO_DEC(thread_params->cur_prio);
+		}
+		else
+		{
+			return thread_params->orig_prio;
+		}
+	}break;
+	case spSpecial:
+	{
+		assert(thread_params->ntasks == 1);
+		return thread_params->my_tasks[0]->ndeps + thread_params->nyields;
+	}break;
+	default:
+		assert(FALSE);
+	}
+	return 0; //will never get here - see the assert in the default case.
+}
+
 void worker_thread(void* p)
 {
   worker_thread_params_t* params=p;
@@ -48,7 +87,8 @@ void worker_thread(void* p)
   unsigned job_count;
   unsigned job_count_diff;
   unsigned completed;
-  unsigned initial_prio = params->prio;
+
+  params->nyields = 0;
 
   printf("***Thread %d running with %d tasks\n",my_thread_id, params->ntasks);
 
@@ -73,17 +113,11 @@ void worker_thread(void* p)
       done = done && (my_tasks[i]->done);
     }
 
-    if (completed == 0)
-    {
-    	PRIO_DEC(params->prio);
-    }
-    else
-    {
-    	params->prio = initial_prio;
-    }
+    params->cur_prio = calculate_prio(params, completed );
 
     job_count = *params->global_job_count;
-    thread_yield(params->prio,0);
+    thread_yield(params->cur_prio,0);
+    ++params->nyields;
     job_count_diff = *params->global_job_count - job_count;
     if (job_count_diff > params->job_wait)
     {

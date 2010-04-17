@@ -15,8 +15,8 @@ typedef enum{stFifo, stPrio} sched_type;
  */
 #define LOWEST_PRIO 16
 #define HIGHEST_PRIO 0
-#define PRIO_INC(_x) if ((_x) > HIGHEST_PRIO) --(_x)
-#define PRIO_DEC(_x) if ((_x) < LOWEST_PRIO) ++(_x)
+#define PRIO_INC(_x) (((_x) > HIGHEST_PRIO)? ((_x)-1): (_x))
+#define PRIO_DEC(_x) (((_x) < LOWEST_PRIO)? ((_x)+1): (_x))
 
 typedef struct sched_t
 {

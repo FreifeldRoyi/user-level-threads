@@ -3,6 +3,7 @@
 #include "include/scheduler.h"
 #include <assert.h>
 #include <malloc.h>
+#include <stdio.h>
 
 
 void test_thread(void* p)
