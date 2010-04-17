@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-int main()
+int main(int argc, char* argv[])
 {
-	app_main(1,"app");
+	app_main(argc,argv);
 
 	return 0;
 }
