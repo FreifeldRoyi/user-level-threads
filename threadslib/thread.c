@@ -226,8 +226,7 @@ void threads_start()
 	memset(&global_stats,0,sizeof(global_stats));
 	manager_thread->state = tsRunning;
 	mctx_save(return_context);
-/*When the manager thread is done it will set it's state to tsFinished and
- * restore our context.
+/*When the manager thread is done it will set itself to NULL and restore our context
  * */
 	if (manager_thread != NULL)
 	{

@@ -40,7 +40,7 @@ void threads_test_case(int nthreads, int nyields)
 		params[i].num_yields = nyields;
 		params[i].thread_id = i;
 	}
-	thread_manager_init(sched_init());
+	thread_manager_init(sched_init(stFifo));
 
 	for (i=0;i<nthreads;++i)
 	{

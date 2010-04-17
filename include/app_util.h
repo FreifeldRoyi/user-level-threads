@@ -24,6 +24,8 @@ typedef struct {
   unsigned ntasks;
   unsigned* global_job_count;
   unsigned job_wait;
+
+  unsigned prio;
 } worker_thread_params_t;
 
 void worker_thread(void* p);

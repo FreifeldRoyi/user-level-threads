@@ -147,12 +147,18 @@ app_data_t load_app_data(FILE* f)
 ui_cmd_t
 get_command(){
 	ui_cmd_t ret;
+	char sep;
 
 	memset(ret.command, 0, MAX_CMD_LEN+1);
 	memset(ret.param, 0, FILENAME_MAX);
 
 	printf(PROMPT);
-	fscanf(stdin, "%4s %s", ret.command, ret.param);
+	scanf("%4s", ret.command);
+	sep = getc(stdin);
+	if (sep == '\n')
+		return ret;
+
+	scanf("%s", ret.param);
 
 	return ret;
 }
@@ -172,7 +178,7 @@ do_load(ui_cmd_t* cmd, app_data_t* app_data)
 	  return FALSE;
 	}
 	*app_data = load_app_data(file);
-	app_data->sched = sched_init();
+	app_data->sched = sched_init(stFifo);
 
 	thread_manager_init(app_data->sched);
 	for (i=0;i<app_data->nthreads;++i)
@@ -201,23 +207,40 @@ do_run(ui_cmd_t* cmd, app_data_t* app_data)
 	  app_data->tasks[i].done = FALSE;
 	}
 	threads_start();
+	printf("All threads terminated.\n");
 	return TRUE;
 }
 
-BOOL
-do_sw(ui_cmd_t* cmd, app_data_t* app_data)
+static int
+validate_tid_param(ui_cmd_t* cmd, app_data_t* app_data)
 {
-	unsigned tid;
-	if (!app_data->initialized)
+	int tid = -1;
+	if (strlen(cmd->param) == 0)
 	{
-	  printf("No data file loaded.\n");
-	  return FALSE;
+		printf("Parameter required.\n");
+		return -1;
 	}
 	tid = atoi(cmd->param);
 	if ((tid < 0) || ( tid >= app_data->nthreads))
 	{
 	  printf("Invalid thread id.\n");
-	  return FALSE;;
+	  return -1;
+	}
+	return tid;
+}
+
+BOOL
+do_sw(ui_cmd_t* cmd, app_data_t* app_data)
+{
+	int tid;
+	if (!app_data->initialized)
+	{
+	  printf("No data file loaded.\n");
+	  return FALSE;
+	}
+	if ((tid = validate_tid_param(cmd, app_data)) < 0)
+	{
+	  return FALSE;
 	}
 	printf("%d\n", thread_stats(THREAD_NONGLOBAL_STATS | tid));
 	return TRUE;
@@ -268,13 +291,11 @@ do_jw(ui_cmd_t* cmd, app_data_t* app_data)
 	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
-	  return FALSE;;
+	  return FALSE;
 	}
-	tid = atoi(cmd->param);
-	if ((tid < 0) || ( tid >= app_data->nthreads))
+	if ((tid = validate_tid_param(cmd, app_data)) < 0)
 	{
-	  printf("Invalid thread id.\n");
-	  return FALSE;;
+	  return FALSE;
 	}
 	printf("%d\n", app_data->thread_params[tid].job_wait);
 	return TRUE;
