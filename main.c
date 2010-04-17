@@ -12,9 +12,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-int main()
+int main(int argc, char* argv[])
 {
-	app_main(1,"app");
+	app_main(argc,argv);
 
 	return 0;
 }
@@ -24,7 +24,7 @@ void queue_tests()
 	run_queue_tests();
 }
 
-void priority_shced_tests()
+void priority_sched_tests()
 {
 	run_prio_scheduler_tests();
 }
