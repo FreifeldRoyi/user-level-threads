@@ -12,14 +12,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define MAX_NTHREADS 10
-#define MAX_NYIELDS 5
-
 int main()
 {
-//	run_app_tests();
-	//app_main(1,"app");
-	prio_test();
+	app_main(1,"app");
 
 	return 0;
 }
@@ -29,54 +24,18 @@ void queue_tests()
 	run_queue_tests();
 }
 
-int thread_test()
+void priority_shced_tests()
 {
-	int nthreads, nyields;
-		unsigned total_switches, max_switches;
-		unsigned expected_total_switches, expected_max_switches;
-		for (nthreads=1; nthreads<=MAX_NTHREADS; ++nthreads)
-		{
-			for (nyields=0; nyields<MAX_NYIELDS; ++nyields)
-			{
-				threads_test_case(nthreads, nyields);
-
-				total_switches = thread_stats(THREAD_STAT_TOTAL_SWITCHES);
-				max_switches = thread_stats(THREAD_STAT_MAX_SWITCHES);
-				/*every thread yields nyields times, and it's termination causes another
-				 * context switch.
-				 * */
-				expected_total_switches = nthreads*(nyields+1);
-				expected_max_switches = nthreads-1;
-	//			printf("total switches: %d(expected:%d), max switches: %d(expected:%d)\n", total_switches, expected_total_switches, max_switches, expected_max_switches);
-				assert( total_switches ==  expected_total_switches);
-				assert( max_switches == expected_max_switches);
-			}
-		}
-		return 0;
+	run_prio_scheduler_tests();
 }
 
-int prio_test()
+void threads_tests()
 {
-	int nthreads, nyields;
-		unsigned total_switches, max_switches;
-		unsigned expected_total_switches, expected_max_switches;
-		for (nthreads=1; nthreads<=MAX_NTHREADS; ++nthreads)
-		{
-			for (nyields=0; nyields<MAX_NYIELDS; ++nyields)
-			{
-				prio_sched_test_case(nthreads, nyields);
-
-				total_switches = thread_stats(THREAD_STAT_TOTAL_SWITCHES);
-				max_switches = thread_stats(THREAD_STAT_MAX_SWITCHES);
-				/*every thread yields nyields times, and it's termination causes another
-				 * context switch.
-				 * */
-				expected_total_switches = nthreads*(nyields+1);
-				expected_max_switches = nthreads-1;
-	//			printf("total switches: %d(expected:%d), max switches: %d(expected:%d)\n", total_switches, expected_total_switches, max_switches, expected_max_switches);
-				assert( total_switches ==  expected_total_switches);
-				assert( max_switches == expected_max_switches);
-			}
-		}
-		return 0;
+	run_thread_test();
 }
+
+void app_test_cases()
+{
+	run_app_tests();
+}
+

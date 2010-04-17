@@ -1,6 +1,9 @@
 #ifndef TEST_THREADS_H_
 #define TEST_THREADS_H_
 
+#define MAX_NTHREADS 10
+#define MAX_NYIELDS 5
+
 typedef struct
 {
 	int* global_counter;
@@ -10,6 +13,6 @@ typedef struct
 	int num_yields;
 }test_thread_param_t;
 
-void threads_test_case(int nthreads, int nyields);
+int run_thread_test();
 
 #endif //TEST_THREADS_H_
