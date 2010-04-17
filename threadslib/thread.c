@@ -88,6 +88,7 @@ int create_thread(void(*sf_addr)(), void* sf_arg)
 	thread_container[tid] = toAdd;
 	stats[tid].cur_switches_wait = 0;
 	stats[tid].max_switches_wait = 0;
+	toAdd->prio = 0;
 
 	sched_add_thread(sched, toAdd);
 
@@ -98,6 +99,7 @@ void
 thread_yield(int pInfo, int statInfo)
 {
 	cur_thread->state = tsFinished;
+	cur_thread->prio = pInfo;
 	mctx_save(cur_thread->cont);
 /* When this thread is started again, this is the point where the execution will commence.
  * We need to distinguish between the situation where we are yielding and the situation

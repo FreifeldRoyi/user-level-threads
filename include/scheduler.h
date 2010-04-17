@@ -19,7 +19,7 @@ struct sched_t* sched_init();
 /**
  * Adds a new thread to the scheduler
  */
-int sched_add_thread(struct sched_t* schd, int prio, thread_t* thrd);
+int sched_add_thread(struct sched_t* schd, thread_t* thrd);
 
 /**
  * Returns the next thread in the scheduler's queue

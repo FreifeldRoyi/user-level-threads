@@ -30,6 +30,7 @@ typedef struct thread
 	ucontext_t cont;
 	enum thread_state_t state;
 	int ID;
+	int prio;
 
 	void* stack;
 } thread_t;
