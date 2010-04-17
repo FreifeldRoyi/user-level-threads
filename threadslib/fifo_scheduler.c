@@ -51,6 +51,7 @@ int fifo_sched_destroy(struct sched_t* scheduler)
 	if (toReturn == 0)
 	{
 		queue_destroy(SCHED_QUEUE(scheduler));
+		free(SCHED(scheduler));
 		free(scheduler);
 	}
 

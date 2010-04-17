@@ -71,6 +71,9 @@ int prio_sched_destroy(struct sched_t* scheduler)
 		}
 	}
 
+	free(SCHED(scheduler));
+	free(scheduler);
+
 	return toReturn;
 }
 
