@@ -4,7 +4,30 @@
 #include <stdio.h>
 #include <malloc.h>
 
+/**Return the number of items in a comma-separated-values list.
+ *@param str the list of items separated by commas.
+ *
+ *@return the number of items in the list.
+ * */
+static int
+get_num_items_in_csv_list(char* str)
+{
+	int ret = strcnt(str,',') + 1;
+	if (ret == 1) //if there were 0 commas...
+	{
+	  if (sscanf(str, " %u ", &thread_id)==EOF)
+		  ret = 0;
+	}
+	return ret;
+}
 
+/**Load the data about which thread may perform which tasks from a file.
+ *
+ * @param f the file to use
+ * @param thread_params the state of this thread
+ * @param tasks the global tasks array
+ * @param ntasks the number of tasks in the global array
+ * */
 static void
 load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks, unsigned ntasks)
 {
@@ -20,18 +43,16 @@ load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks,
   assert(buf != NULL);
   assert(buf[alloc_size-1] == 0);
 
+  //read the thread id and then move buf to point after it.
   assert (sscanf(buf, "%u : ", &thread_id) == 1);
   buf = strchr(buf, ':')+1;
 
-  thread_params->ntasks = strcnt(buf,',') + 1;
-  if (thread_params->ntasks == 1) //if there were 0 commas...
-  {
-	  if (sscanf(buf, " %u ", &thread_id)==EOF)
-		  thread_params->ntasks = 0;
-  }
-
+  thread_params->ntasks = get_num_items_in_csv_list(buf);
   thread_params->my_tasks = calloc(thread_params->ntasks, sizeof(task_t*));
 
+  //iterate over the task id list and add them to this thread's list of
+  //tasks.
+  //cur_task is the next available item in my_tasks.
   cur_task = 0;
   token = strtok(buf,",");
   while (token != NULL)
@@ -49,7 +70,6 @@ load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks,
     thread_params->my_tasks[cur_task] = &(tasks[task_id]);
 
     ++cur_task;
-
     token = strtok(NULL,",");
   }
 
@@ -57,7 +77,13 @@ load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks,
 
 }
 
-/*load task dependency matrix*/
+/**load task dependency matrix from a file.
+ *
+ * @param f the file to use
+ * @param task the task to load the info for
+ * @param tasks the global tasks array
+ * @param ntasks the number of tasks in the global array
+ * */
 static void
 load_task_deps(FILE* f, task_t* task, task_t* tasks, unsigned ntasks)
 {
@@ -149,6 +175,8 @@ free_app_data(app_data_t* app_data)
 	free(app_data->thread_params);
 }
 
+/*return TRUE if the given task's dependencies have all completed.
+ * */
 BOOL
 ready_to_run(task_t* task)
 {
@@ -171,7 +199,12 @@ ready_to_run(task_t* task)
  * also, to avoid starvation, we'll add the number of times this thread has run before to it's priority,
  * so that at some point some other thread will run.
  */
-
+/**Calculate the priority that the given thread should yield with.
+ * @param thread_params the state of the thread
+ * @param completed the number of jobs that this thread completed since the last yield.
+ *
+ * @return the thread's new priority according to the scheduling policy.
+ * */
 static unsigned
 calculate_prio(worker_thread_params_t* thread_params, int completed)
 {
