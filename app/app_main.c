@@ -2,11 +2,30 @@
 
 #include "include/app_main.h"
 
+#define DUMP(_x) printf("%s[%d] %s=%d\n",__FILE__,__LINE__, #_x, _x)
+
+int
+strcnt(const char* str, char chr)
+{
+	const char* cur = str;
+	int ret = 0;
+
+	while (*cur != '\0')
+	{
+		if ( (*cur) == chr)
+		{
+			++ret;
+		}
+		++cur;
+	}
+	return ret;
+}
+
 static void
 load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks, unsigned ntasks)
 {
   const unsigned alloc_size = ntasks*5+3;/*we assume that a taskid has up to 4 digits.*/
-  char* buf = malloc(alloc_size);
+  char* buf = malloc(alloc_size), *orig_buf = buf;
   char* token;
   unsigned thread_id;
   unsigned cur_task;
@@ -18,19 +37,13 @@ load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks,
   assert(buf[alloc_size-1] == 0);
 
   assert (sscanf(buf, "%u : ", &thread_id) == 1);
-
   buf = strchr(buf, ':')+1;
 
-  thread_params->ntasks=0;
-  token = strtok(buf,",");
-  while (token != NULL)
+  thread_params->ntasks = strcnt(buf,',') + 1;
+  if (thread_params->ntasks == 1) //if there were 0 commas...
   {
-    unsigned task_id;
-    if (sscanf(token, " %u ", &task_id) == 0)
-      break;/*last element is empty. this is OK.*/
-
-    ++thread_params->ntasks;
-    token = strtok(NULL,",");
+	  if (sscanf(buf, " %u ", &thread_id)==EOF)
+		  thread_params->ntasks = 0;
   }
 
   thread_params->my_tasks = calloc(thread_params->ntasks, sizeof(task_t*));
@@ -40,14 +53,23 @@ load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks,
   while (token != NULL)
   {
     unsigned task_id;
-    if (sscanf(token, " %u ", &task_id) == 0)
+    int sscanf_ret = sscanf(token, " %u ", &task_id);
+    assert(sscanf_ret != 0);
+    if (sscanf_ret == EOF)
+    {
       break;/*last element is empty. this is OK.*/
+    }
+    //the task_id we read from the file is one-based and our array is zero-based.
+    --task_id;
 
     thread_params->my_tasks[cur_task] = &(tasks[task_id]);
 
     ++cur_task;
+
     token = strtok(NULL,",");
   }
+
+  free(orig_buf);
 
 }
 
@@ -67,8 +89,15 @@ load_task_deps(FILE* f, task_t* task, task_t* tasks, unsigned ntasks)
 
     fscanf(f, " %u ",&tmp);
     assert(tmp<2);
-    dep[j] = (tmp)?TRUE:FALSE;
-    ++task->ndeps;
+    if (tmp)
+    {
+    	dep[j] = TRUE;
+		++task->ndeps;
+    }
+    else
+    {
+    	dep[j] = FALSE;
+    }
   }
 
   task->deps = calloc(task->ndeps, sizeof(task_t*));
@@ -88,6 +117,8 @@ app_data_t load_app_data(FILE* f)
 {
   app_data_t ret;
   unsigned i;
+
+  assert(f!=NULL);
 
   fscanf(f, "k = %u\n", &ret.nthreads);
   fscanf(f, "n = %u\n", &ret.ntasks);
@@ -132,7 +163,7 @@ do_load(ui_cmd_t* cmd, app_data_t* app_data)
 	FILE* file;
 	int i;
 
-	assert(app_data->threads == NULL); //we currently don't support loading more then one file.
+	assert(!app_data->initialized); //we don't support loading more then once.
 
 	file = fopen(cmd->param,"r");
 	if (file == NULL)
@@ -141,14 +172,17 @@ do_load(ui_cmd_t* cmd, app_data_t* app_data)
 	  return FALSE;
 	}
 	*app_data = load_app_data(file);
-	app_data->threads = calloc(app_data->nthreads, sizeof(thread_t));
+	app_data->sched = sched_init();
 
-	thread_manager_init(sched_init());
+	thread_manager_init(app_data->sched);
 	for (i=0;i<app_data->nthreads;++i)
 	{
 	  app_data->thread_params[i].global_job_count = &app_data->job_count;
 	  create_thread(worker_thread,&app_data->thread_params[i]);
 	}
+	app_data->initialized = TRUE;
+
+	fclose(file);
 	return TRUE;
 }
 
@@ -156,7 +190,7 @@ BOOL
 do_run(ui_cmd_t* cmd, app_data_t* app_data)
 {
 	int i;
-	if (app_data->threads == NULL)
+	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
 	  return FALSE;
@@ -174,7 +208,7 @@ BOOL
 do_sw(ui_cmd_t* cmd, app_data_t* app_data)
 {
 	unsigned tid;
-	if (app_data->threads == NULL)
+	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
 	  return FALSE;
@@ -192,7 +226,7 @@ do_sw(ui_cmd_t* cmd, app_data_t* app_data)
 BOOL
 do_msw(ui_cmd_t* cmd, app_data_t* app_data)
 {
-	if (app_data->threads == NULL)
+	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
 	  return FALSE;
@@ -204,7 +238,7 @@ do_msw(ui_cmd_t* cmd, app_data_t* app_data)
 BOOL
 do_asw(ui_cmd_t* cmd, app_data_t* app_data)
 {
-	if (app_data->threads == NULL)
+	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
 	  return FALSE;
@@ -217,7 +251,7 @@ do_asw(ui_cmd_t* cmd, app_data_t* app_data)
 BOOL
 do_switches(ui_cmd_t* cmd, app_data_t* app_data)
 {
-	if (app_data->threads == NULL)
+	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
 	  return FALSE;
@@ -231,7 +265,7 @@ BOOL
 do_jw(ui_cmd_t* cmd, app_data_t* app_data)
 {
 	int tid = -1;
-	if (app_data->threads == NULL)
+	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
 	  return FALSE;;
@@ -252,7 +286,7 @@ do_mjw(ui_cmd_t* cmd, app_data_t* app_data)
 	unsigned max_job_wait = 0;
 	int i;
 
-	if (app_data->threads == NULL)
+	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
 	  return FALSE;;
@@ -272,7 +306,7 @@ do_ajw(ui_cmd_t* cmd, app_data_t* app_data)
 	unsigned sum_job_wait = 0;
 	int i;
 
-	if (app_data->threads == NULL)
+	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
 	  return FALSE;;
@@ -289,7 +323,7 @@ do_ajw(ui_cmd_t* cmd, app_data_t* app_data)
 BOOL
 do_tasks(ui_cmd_t* cmd, app_data_t* app_data)
 {
-	if (app_data->threads == NULL)
+	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
 	  return FALSE;;
@@ -300,9 +334,13 @@ do_tasks(ui_cmd_t* cmd, app_data_t* app_data)
 }
 
 int app_main(int argc, char **argv) {
-  app_data_t app_data;
+  app_data_t app_data = {0};
   ui_cmd_t cmd;
   BOOL exit = FALSE;
+
+  app_data.tasks = NULL;
+
+  app_data.initialized = FALSE;
 
   do{
 	  cmd = get_command();
@@ -360,7 +398,13 @@ int app_main(int argc, char **argv) {
 		  if (!do_tasks(&cmd, &app_data))
 			  continue;
 	  }
+	  else
+	  {
+		  printf("Unknown command %s.\n", cmd.command);
+	  }
   }while (!exit);
+
+  free_app_data(&app_data);
 
   return 0;
 }

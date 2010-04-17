@@ -23,11 +23,6 @@ typedef struct _ui_cmd_t{
 	char param[FILENAME_MAX];
 }ui_cmd_t;
 
-static void load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks, unsigned ntasks);
-
-/*load task dependency matrix*/
-static void load_task_deps(FILE* f, task_t* task, task_t* tasks, unsigned ntasks);
-
 app_data_t load_app_data(FILE* f);
 
 ui_cmd_t get_command();

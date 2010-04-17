@@ -17,7 +17,8 @@
 
 int main()
 {
-	run_app_tests();
+//	run_app_tests();
+	app_main(1,"app");
 
 	return 0;
 }

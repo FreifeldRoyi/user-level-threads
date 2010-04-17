@@ -2,6 +2,7 @@
 #define APP_UTIL_H_
 
 #include "thread.h"
+#include "scheduler.h"
 
 #define MAX(_x,_y) (((_x)>(_y))?(_x):(_y))
 
@@ -32,9 +33,13 @@ typedef struct
   unsigned ntasks, nthreads;
   task_t* tasks;
   worker_thread_params_t* thread_params;
+  struct sched_t* sched;
 
   unsigned job_count;
-  thread_t* threads;
+
+  BOOL initialized;
 }app_data_t;
+
+void free_app_data(app_data_t* app_data);
 
 #endif

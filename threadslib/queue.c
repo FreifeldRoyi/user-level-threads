@@ -84,6 +84,7 @@ void* queue_pop(queue_t* item)
 
 		QUEUE_HEAD(item) = NODE_NEXT(QUEUE_HEAD(item));
 		toReturn = NODE_DATA(nodeToPop);
+		node_destroy(nodeToPop,NULL);
 	}
 
 	queue_dec_size(item);

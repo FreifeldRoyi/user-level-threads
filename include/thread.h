@@ -29,8 +29,9 @@ typedef struct thread
 {
 	ucontext_t cont;
 	enum thread_state_t state;
-	thread_stats_t stats;
 	int ID;
+
+	void* stack;
 } thread_t;
 
 /**

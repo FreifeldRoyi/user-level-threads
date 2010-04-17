@@ -8,18 +8,40 @@
 #include "include/test_app.h"
 #include "../include/app_main.h"
 
-void run_app_tests()
+void test_do_run()
 {
-	//test_load_app_data();
-	test_do_run();
+	ui_cmd_t cmd;
+	BOOL b;
+	app_data_t app_data;
+
+	strcpy(cmd.command,"load");
+	strcpy(cmd.param,"test.txt");
+
+	b = do_load(&cmd, &app_data);
+	printf("LOAD: %u\n",b);
+
+	strcpy(cmd.command,"run");
+	strcpy(cmd.param,"");
+	b = do_run(&cmd,&app_data);
+	printf("RUN: %u\n",b);
+
+	free_app_data(&app_data);
 }
+
+
+#define ASSERT_EQUALS(_x, _y) if (_x != _y) {printf("%s != %s (%d != %d)\n",#_x,#_x,_x,_y);}
 
 void test_load_app_data()
 {
-	printf("Testing load app data\nProblems are: ");
 	FILE* f = fopen("test.txt","r");
-	app_data_t toTest = load_app_data(f);
-	int i;
+	app_data_t toTest;
+	int expected_ndeps[]={2,1,1,0};
+	int expected_ntasks[]={2,2,1,0,3};
+	int i,j;
+
+	assert(f != NULL);
+	toTest = load_app_data(f);
+	printf("Testing load app data\nProblems are: ");
 
 	if (toTest.ntasks != 4)
 		printf(" TASK_NO_ERR");
@@ -27,39 +49,38 @@ void test_load_app_data()
 		printf(" THREAD_NO_ERR");
 
 	for (i = 0; i < 4; ++i)
-		assert(toTest.tasks[i].task_id == i);
-	if (!(toTest.tasks[0].ndeps = 2))
-		printf(" WRONG_DEP0");
-	if (!(toTest.tasks[1].ndeps = 1))
-		printf(" WRONG_DEP1");
-	if (!(toTest.tasks[2].ndeps = 1))
-		printf(" WRONG_DEP2");
-	if (!(toTest.tasks[3].ndeps = 0))
-		printf(" WRONG_DEP3");
+	{
+		printf("i: %d\n", i);
+		ASSERT_EQUALS(toTest.tasks[i].task_id,i);
+	}
 
+	for (i=0;i<4;++i)
+	{
+		printf("i: %d\n", i);
+		ASSERT_EQUALS(toTest.tasks[i].ndeps,expected_ndeps[i]);
+		for (j=0; j< toTest.tasks[i].ndeps; ++j)
+		{
+			assert(toTest.tasks[i].deps[j] != NULL);
+		}
+	}
 
-	if (!toTest.thread_params[0].ntasks == 2)
-		printf( " WRONG_TASKS_T0");
-	if (!toTest.thread_params[1].ntasks == 2)
-		printf( " WRONG_TASKS_T1");
-	if (!toTest.thread_params[2].ntasks == 1)
-		printf( " WRONG_TASKS_T2");
-	if (!toTest.thread_params[3].ntasks == 0)
-		printf( " WRONG_TASKS_T3");
-	if (!toTest.thread_params[4].ntasks == 3)
-		printf( " WRONG_TASKS_T4");
+	for (i=0;i<5;++i)
+	{
+		printf("i: %d\n", i);
+		ASSERT_EQUALS(toTest.thread_params[i].ntasks,expected_ntasks[i]);
+		for (j=0; j< toTest.thread_params[i].ntasks; ++j)
+		{
+			printf("j: %d\n", j);
+			assert(toTest.thread_params[i].my_tasks[j] != NULL);
+		}
+	}
 
 	printf("\n");
 }
 
-void test_do_run()
+void run_app_tests()
 {
-	//ui_cmd_t cmd = get_command();
-	FILE* f = fopen("test.txt","r");
-	app_data_t dat = load_app_data(f);
-	BOOL b = do_run(NULL,&dat);
-
-	printf("%u",b);
+//	get_command();
+//	test_load_app_data();
+	test_do_run();
 }
-
-

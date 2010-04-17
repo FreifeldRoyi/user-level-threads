@@ -55,10 +55,13 @@ thread_t* sched_next_thread(struct sched_t* schd)
  */
 int sched_destroy(struct sched_t* scheduler)
 {
-	int toReturn = SCHED_QUEUE(scheduler);
+	int toReturn = SCHED_QUEUE(scheduler)->size;
 
 	if (toReturn == 0)
+	{
+		queue_destroy(SCHED_QUEUE(scheduler));
 		free(scheduler);
+	}
 
 	return toReturn;
 }

@@ -2,6 +2,26 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <malloc.h>
+
+void
+free_app_data(app_data_t* app_data)
+{
+	int i;
+
+	sched_destroy(app_data->sched);
+
+	for (i=0; i < app_data->ntasks; ++i)
+	{
+		free(app_data->tasks[i].deps);
+	}
+	for (i=0; i < app_data->nthreads; ++i)
+	{
+		free(app_data->thread_params[i].my_tasks);
+	}
+	free(app_data->tasks);
+	free(app_data->thread_params);
+}
 
 BOOL
 ready_to_run(task_t* task)
@@ -23,7 +43,7 @@ void worker_thread(void* p)
   worker_thread_params_t* params=p;
   task_t** my_tasks = params->my_tasks;
   BOOL done = FALSE;
-  int my_thread_id = current_thread_id();
+  int my_thread_id = current_thread_id()+1;
   unsigned i;
   unsigned job_count;
   unsigned job_count_diff;
@@ -35,15 +55,14 @@ void worker_thread(void* p)
     done = TRUE;
     for (i=0; i<params->ntasks; ++i)
     {
-    	printf("%d",my_tasks[i]->done);
-      printf("Thread %d checking task %d\n",my_thread_id, my_tasks[i]->task_id);
+      printf("Thread %d checking task %d\n",my_thread_id, my_tasks[i]->task_id+1);
       if (my_tasks[i]->done)
       {
-    	  printf("...task %d already done\n", my_tasks[i]->task_id);
+    	  printf("...task %d already done\n", my_tasks[i]->task_id+1);
       }
       else if ( ready_to_run(my_tasks[i]))
       {
-		  printf("Thread %d performed job %d\n", my_thread_id,my_tasks[i]->task_id);
+		  printf("Thread %d performed job %d\n", my_thread_id,my_tasks[i]->task_id+1);
 		  ++(*params->global_job_count);
 		  my_tasks[i]->done = TRUE;
       }

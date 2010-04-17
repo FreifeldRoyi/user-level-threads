@@ -31,6 +31,7 @@ typedef struct _global_stats_t
 static thread_t* cur_thread = NULL;
 static thread_t* manager_thread = NULL;
 static thread_t* thread_container[MAX_THREAD_COUNT];
+static thread_stats_t stats[MAX_THREAD_COUNT]={{0}};
 static global_stats_t global_stats = {0};
 static struct sched_t* sched = NULL;
 static ucontext_t return_context;
@@ -61,12 +62,12 @@ static thread_t*
 allocate_thread(void(*sf_addr)(), void* sf_arg)
 {
 	thread_t* ret = (thread_t*)malloc(sizeof(thread_t));
+	void* stack = malloc(MAX_STACK_SIZE);
 
 	assert(ret != NULL);
-	mctx_create(&ret->cont, sf_addr, sf_arg, malloc(MAX_STACK_SIZE),MAX_STACK_SIZE);
+	mctx_create(&ret->cont, sf_addr, sf_arg, stack, MAX_STACK_SIZE);
 	ret -> state = tsFinished;
-	ret -> stats.max_switches_wait = 0;
-	ret -> stats.cur_switches_wait = 0;
+	ret -> stack = stack;
 
 	return ret;
 }
@@ -85,6 +86,8 @@ int create_thread(void(*sf_addr)(), void* sf_arg)
 	thread_t* toAdd = allocate_thread(sf_addr, sf_arg);
 	toAdd->ID = tid;
 	thread_container[tid] = toAdd;
+	stats[tid].cur_switches_wait = 0;
+	stats[tid].max_switches_wait = 0;
 
 	sched_add_thread(sched, toAdd);
 
@@ -112,15 +115,23 @@ thread_yield(int pInfo, int statInfo)
 
 void update_switch_count(thread_t* thread)
 {
-	++thread->stats.cur_switches_wait;
-	if (thread->stats.cur_switches_wait > thread->stats.max_switches_wait)
+	thread_stats_t* st = &stats[thread->ID];
+	++st->cur_switches_wait;
+	if (st->cur_switches_wait > st->max_switches_wait)
 	{
-		thread->stats.max_switches_wait = thread->stats.cur_switches_wait;
+		st->max_switches_wait = st->cur_switches_wait;
 	}
-	if (thread->stats.max_switches_wait > global_stats.max_switches_wait)
+	if (st->max_switches_wait > global_stats.max_switches_wait)
 	{
-		global_stats.max_switches_wait = thread->stats.max_switches_wait;
+		global_stats.max_switches_wait = st->max_switches_wait;
 	}
+}
+
+static void
+free_thread(thread_t* thread)
+{
+	free(thread->stack);
+	free(thread);
 }
 
 void
@@ -131,9 +142,11 @@ manager_thread_func(void* ptr)
 //	printf("manager thread started.\n");
 	while (1)
 	{
-		while ( (cur_thread = sched_next_thread(param->sched)) == NULL)
+		if ( (cur_thread = sched_next_thread(param->sched)) == NULL)
 		{
-			manager_thread->state = tsFinished;
+			free(param);
+			free_thread(manager_thread);
+			manager_thread = NULL;
 			mctx_restore(&return_context);
 		}
 
@@ -151,7 +164,7 @@ manager_thread_func(void* ptr)
 		if (cur_thread->state == tsRunning)
 		{
 //			printf("manager: restoring thread %d\n", cur_thread->ID);
-			cur_thread->stats.cur_switches_wait = 0;
+			stats[cur_thread->ID].cur_switches_wait = 0;
 			mctx_restore(&cur_thread->cont);
 		}
 		else
@@ -159,7 +172,7 @@ manager_thread_func(void* ptr)
 			if (thread_container[cur_thread->ID] == NULL)
 			{
 				//the current thread called thread_term and is marked for removal.
-				free(cur_thread);
+				free_thread(cur_thread);
 				cur_thread = NULL;
 			}
 			else
@@ -177,8 +190,7 @@ unsigned thread_stats(unsigned request_stats)
 	if (request_stats & THREAD_NONGLOBAL_STATS)
 	{
 		tid = request_stats & ~THREAD_NONGLOBAL_STATS;
-		assert(thread_container[tid]!=NULL);
-		return thread_container[tid]->stats.max_switches_wait;
+		return stats[tid].max_switches_wait;
 	}
 
 	switch(request_stats)
@@ -215,7 +227,7 @@ void threads_start()
 /*When the manager thread is done it will set it's state to tsFinished and
  * restore our context.
  * */
-	if (manager_thread->state == tsRunning)
+	if (manager_thread != NULL)
 	{
 		mctx_restore(&manager_thread->cont);
 	}
