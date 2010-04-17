@@ -4,32 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/**Count the appearances of a character in a string.
- *
- * @param str the string. Must not be NULL.
- * @param chr the character to count in str
- *
- * @return the number of times that chr appears in str.
- * */
-static int
-strcnt(const char* str, char chr)
-{
-	const char* cur = str;
-	int ret = 0;
-
-	assert(str != NULL);
-
-	while (*cur != '\0')
-	{
-		if ( (*cur) == chr)
-		{
-			++ret;
-		}
-		++cur;
-	}
-	return ret;
-}
-
 ui_cmd_t
 get_command(){
 	ui_cmd_t ret;
