@@ -35,7 +35,10 @@ initialize_threads(app_data_t* app_data)
 {
 	unsigned i;
 
-	app_data->sched = sched_init(stPrio);
+	if (app_data->sched == NULL)
+	{
+		app_data->sched = sched_init(stPrio);
+	}
 
 	thread_manager_init(app_data->sched);
 	for (i=0;i<app_data->nthreads;++i)
