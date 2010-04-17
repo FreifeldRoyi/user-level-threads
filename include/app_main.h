@@ -1,16 +1,5 @@
-/*
- * app_main.h
- *
- *  Created on: April 16, 2010
- *      Author: Freifeld Royi
- */
-
 #include "include/app_util.h"
 #include "include/scheduler.h"
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 
 #ifndef APP_MAIN_H_
 #define APP_MAIN_H_
@@ -22,8 +11,6 @@ typedef struct _ui_cmd_t{
 	char command[MAX_CMD_LEN+1];
 	char param[FILENAME_MAX];
 }ui_cmd_t;
-
-app_data_t load_app_data(FILE* f);
 
 ui_cmd_t get_command();
 

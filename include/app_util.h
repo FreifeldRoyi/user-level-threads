@@ -4,6 +4,8 @@
 #include "thread.h"
 #include "scheduler.h"
 
+#include <stdio.h>
+
 #define MAX(_x,_y) (((_x)>(_y))?(_x):(_y))
 
 typedef unsigned BOOL;
@@ -51,5 +53,6 @@ typedef struct
 }app_data_t;
 
 void free_app_data(app_data_t* app_data);
+app_data_t load_app_data(FILE* f);
 
 #endif

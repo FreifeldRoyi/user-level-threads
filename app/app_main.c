@@ -1,6 +1,10 @@
 
 
 #include "include/app_main.h"
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #define DUMP(_x) printf("%s[%d] %s=%d\n",__FILE__,__LINE__, #_x, _x)
 
@@ -21,130 +25,6 @@ strcnt(const char* str, char chr)
 	return ret;
 }
 
-static void
-load_thread_tasks(FILE* f, worker_thread_params_t* thread_params, task_t* tasks, unsigned ntasks)
-{
-  const unsigned alloc_size = ntasks*5+3;/*we assume that a taskid has up to 4 digits.*/
-  char* buf = malloc(alloc_size), *orig_buf = buf;
-  char* token;
-  unsigned thread_id;
-  unsigned cur_task;
-
-  memset(buf,0,alloc_size);
-
-  buf = fgets(buf,alloc_size, f);
-  assert(buf != NULL);
-  assert(buf[alloc_size-1] == 0);
-
-  assert (sscanf(buf, "%u : ", &thread_id) == 1);
-  buf = strchr(buf, ':')+1;
-
-  thread_params->ntasks = strcnt(buf,',') + 1;
-  if (thread_params->ntasks == 1) //if there were 0 commas...
-  {
-	  if (sscanf(buf, " %u ", &thread_id)==EOF)
-		  thread_params->ntasks = 0;
-  }
-
-  thread_params->my_tasks = calloc(thread_params->ntasks, sizeof(task_t*));
-
-  cur_task = 0;
-  token = strtok(buf,",");
-  while (token != NULL)
-  {
-    unsigned task_id;
-    int sscanf_ret = sscanf(token, " %u ", &task_id);
-    assert(sscanf_ret != 0);
-    if (sscanf_ret == EOF)
-    {
-      break;/*last element is empty. this is OK.*/
-    }
-    //the task_id we read from the file is one-based and our array is zero-based.
-    --task_id;
-
-    thread_params->my_tasks[cur_task] = &(tasks[task_id]);
-
-    ++cur_task;
-
-    token = strtok(NULL,",");
-  }
-
-  free(orig_buf);
-
-}
-
-/*load task dependency matrix*/
-static void
-load_task_deps(FILE* f, task_t* task, task_t* tasks, unsigned ntasks)
-{
-  BOOL *dep = calloc(ntasks, sizeof(BOOL));
-  unsigned cur_dep = 0;
-  unsigned j;
-
-  task->ndeps = 0;
-
-  for (j=0;j<ntasks;++j)
-  {
-    unsigned tmp;
-
-    fscanf(f, " %u ",&tmp);
-    assert(tmp<2);
-    if (tmp)
-    {
-    	dep[j] = TRUE;
-		++task->ndeps;
-    }
-    else
-    {
-    	dep[j] = FALSE;
-    }
-  }
-
-  task->deps = calloc(task->ndeps, sizeof(task_t*));
-
-  for (j=0;j<ntasks;++j)
-  {
-    if (dep[j])
-    {
-      task->deps[cur_dep++] = &(tasks[j]);
-    }
-  }
-
-  free(dep);
-}
-
-app_data_t load_app_data(FILE* f)
-{
-  app_data_t ret;
-  unsigned i;
-
-  assert(f!=NULL);
-
-  fscanf(f, "k = %u\n", &ret.nthreads);
-  fscanf(f, "n = %u\n", &ret.ntasks);
-
-  //printf("app has %d threads, and %d tasks",ret.nthreads,ret.ntasks);
-
-  ret.tasks = calloc(ret.ntasks, sizeof(task_t));
-  ret.thread_params = calloc(ret.nthreads, sizeof(worker_thread_params_t));
-
-  memset(ret.tasks, 0, ret.ntasks * sizeof(task_t));
-  memset(ret.thread_params, 0, ret.nthreads * sizeof(worker_thread_params_t));
-
-  for (i=0;i<ret.ntasks;++i)
-  {
-    ret.tasks[i].task_id = i;
-    load_task_deps(f, &ret.tasks[i],ret.tasks, ret.ntasks);
-  }
-  for (i=0;i<ret.nthreads;++i)
-  {
-    load_thread_tasks(f, &ret.thread_params[i], ret.tasks, ret.ntasks);
-  }
-
-  ret.loaded = TRUE;
-
-  return ret;
-}
 
 ui_cmd_t
 get_command(){

@@ -8,6 +8,9 @@
 #include "include/test_app.h"
 #include "../include/app_main.h"
 
+#include <assert.h>
+#include <string.h>
+
 void test_do_run()
 {
 	ui_cmd_t cmd;
