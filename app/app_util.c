@@ -3,6 +3,33 @@
 #include <assert.h>
 #include <stdio.h>
 #include <malloc.h>
+#include <string.h>
+
+/**Count the appearances of a character in a string.
+ *
+ * @param str the string. Must not be NULL.
+ * @param chr the character to count in str
+ *
+ * @return the number of times that chr appears in str.
+ * */
+static int
+strcnt(const char* str, char chr)
+{
+	const char* cur = str;
+	int ret = 0;
+
+	assert(str != NULL);
+
+	while (*cur != '\0')
+	{
+		if ( (*cur) == chr)
+		{
+			++ret;
+		}
+		++cur;
+	}
+	return ret;
+}
 
 /**Return the number of items in a comma-separated-values list.
  *@param str the list of items separated by commas.
@@ -13,6 +40,7 @@ static int
 get_num_items_in_csv_list(char* str)
 {
 	int ret = strcnt(str,',') + 1;
+	unsigned thread_id;
 	if (ret == 1) //if there were 0 commas...
 	{
 	  if (sscanf(str, " %u ", &thread_id)==EOF)
@@ -159,7 +187,7 @@ app_data_t load_app_data(FILE* f)
 void
 free_app_data(app_data_t* app_data)
 {
-	int i;
+	unsigned i;
 
 	sched_destroy(app_data->sched);
 
@@ -249,20 +277,13 @@ void worker_thread(void* p)
 
   params->nyields = 0;
 
-  printf("***Thread %d running with %d tasks\n",my_thread_id, params->ntasks);
-
   while (!done)
   {
 	completed = 0;
     done = TRUE;
     for (i=0; i<params->ntasks; ++i)
     {
-      printf("***Thread %d checking task %d\n",my_thread_id, my_tasks[i]->task_id+1);
-      if (my_tasks[i]->done)
-      {
-    	  printf("***task %d already done\n", my_tasks[i]->task_id+1);
-      }
-      else if ( ready_to_run(my_tasks[i]))
+      if ( (!my_tasks[i]->done) && ( ready_to_run(my_tasks[i])) )
       {
 		  printf("Thread %d performed job %d\n", my_thread_id,my_tasks[i]->task_id+1);
 		  ++(*params->global_job_count);

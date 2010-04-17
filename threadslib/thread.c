@@ -14,6 +14,8 @@
 
 #include <stdio.h>
 
+#define UNUSED(_x) if ((_x) != (_x)) {(_x)=(_x);}
+
 #define MAX_STACK_SIZE 4000
 #define MAX_THREAD_COUNT 4096
 
@@ -31,8 +33,8 @@ typedef struct _global_stats_t
 static thread_t* cur_thread = NULL;
 static thread_t* manager_thread = NULL;
 static thread_t* thread_container[MAX_THREAD_COUNT];
-static thread_stats_t stats[MAX_THREAD_COUNT]={{0}};
-static global_stats_t global_stats = {0};
+static thread_stats_t stats[MAX_THREAD_COUNT];
+static global_stats_t global_stats;
 static struct sched_t* sched = NULL;
 static ucontext_t return_context;
 
@@ -48,7 +50,7 @@ void mctx_create(ucontext_t *uctx, void (*sf_addr)( ), void *sf_arg, void *sk_ad
         /* fetch current context */
         getcontext(uctx);
         /* adjust to new context */
-        uctx->uc_link = sf_addr; ///TODO why is this assignment needed?
+        uctx->uc_link = NULL;
         uctx->uc_stack.ss_sp = sk_addr;
         uctx->uc_stack.ss_size = sk_size;
         uctx->uc_stack.ss_flags = 0;
@@ -98,6 +100,7 @@ int create_thread(void(*sf_addr)(), void* sf_arg)
 void
 thread_yield(int pInfo, int statInfo)
 {
+	UNUSED(statInfo);
 	cur_thread->state = tsFinished;
 	cur_thread->prio = pInfo;
 	mctx_save(cur_thread->cont);
