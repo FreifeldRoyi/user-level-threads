@@ -18,7 +18,7 @@ typedef struct _task_t {
   unsigned task_id;
 } task_t;
 
-typedef struct{
+typedef struct {
   task_t** my_tasks;
   unsigned ntasks;
   unsigned* global_job_count;

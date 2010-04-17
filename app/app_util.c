@@ -35,6 +35,7 @@ void worker_thread(void* p)
     done = TRUE;
     for (i=0; i<params->ntasks; ++i)
     {
+    	printf("%d",my_tasks[i]->done);
       printf("Thread %d checking task %d\n",my_thread_id, my_tasks[i]->task_id);
       if (my_tasks[i]->done)
       {

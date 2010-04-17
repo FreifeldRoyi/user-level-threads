@@ -2,7 +2,7 @@
  * main.c
  *
  *  Created on: Mar 26, 2010
- *      Author: freifeldroyi
+ *      Author: Freifeld Royi
  */
 #include "include/queue.h"
 #include "tests/include/test_threads.h"

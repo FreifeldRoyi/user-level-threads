@@ -1,8 +1,8 @@
 /*
  * app_main.h
  *
- *  Created on: Apr 16, 2010
- *      Author: freifeldroyi
+ *  Created on: April 16, 2010
+ *      Author: Freifeld Royi
  */
 
 #include "include/app_util.h"

@@ -92,6 +92,8 @@ app_data_t load_app_data(FILE* f)
   fscanf(f, "k = %u\n", &ret.nthreads);
   fscanf(f, "n = %u\n", &ret.ntasks);
 
+  //printf("app has %d threads, and %d tasks",ret.nthreads,ret.ntasks);
+
   ret.tasks = calloc(ret.ntasks, sizeof(task_t));
   ret.thread_params = calloc(ret.nthreads, sizeof(worker_thread_params_t));
 
@@ -119,7 +121,7 @@ get_command(){
 	memset(ret.param, 0, FILENAME_MAX);
 
 	printf(PROMPT);
-	scanf("%4s %s", ret.command, ret.param);
+	fscanf(stdin, "%4s %s", ret.command, ret.param);
 
 	return ret;
 }
