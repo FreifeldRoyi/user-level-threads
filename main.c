@@ -4,13 +4,14 @@
  *  Created on: Mar 26, 2010
  *      Author: Freifeld Royi
  */
-#include "include/queue.h"
 #include "tests/include/test_threads.h"
 #include "tests/include/test_queue.h"
-#include "include/thread.h"
 #include "tests/include/test_app.h"
+#include "include/app_main.h"
 #include <stdio.h>
 #include <assert.h>
+
+
 
 int main(int argc, char* argv[])
 {
@@ -19,6 +20,7 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+#ifdef TESTS
 void queue_tests()
 {
 	run_queue_tests();
@@ -38,4 +40,4 @@ void app_test_cases()
 {
 	run_app_tests();
 }
-
+#endif

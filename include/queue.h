@@ -10,13 +10,13 @@
 
 #include <stdlib.h>
 
-// queue_t macros
+/* queue_t macros*/
 #define QUEUE(x) ((queue_t *) (x))
 #define QUEUE_HEAD(x) QUEUE((x)) -> head
 #define QUEUE_TAIL(x) QUEUE((x)) -> tail
 #define QUEUE_SIZE(x) QUEUE((x)) -> size
 
-// node_t macros
+/* node_t macros*/
 #define NODE(x) ((node_t *) (x))
 #define NODE_DATA(x) NODE((x)) -> data
 #define NODE_NEXT(x) NODE((x)) -> next

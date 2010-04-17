@@ -187,7 +187,7 @@ app_data_t load_app_data(FILE* f)
 void
 free_app_data(app_data_t* app_data)
 {
-	int i;
+	unsigned i;
 
 	sched_destroy(app_data->sched);
 
