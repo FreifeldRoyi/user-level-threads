@@ -4,31 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/**Count the appearances of a character in a string.
- *
- * @param str the string. Must not be NULL.
- * @param chr the character to count in str
- *
- * @return the number of times that chr appears in str.
- * */
-static int
-strcnt(const char* str, char chr)
-{
-	const char* cur = str;
-	int ret = 0;
-
-	assert(str != NULL);
-
-	while (*cur != '\0')
-	{
-		if ( (*cur) == chr)
-		{
-			++ret;
-		}
-		++cur;
-	}
-	return ret;
-}
+#define UNUSED(_x) if ((_x) != (_x)) {(_x)=(_x);}
 
 ui_cmd_t
 get_command(){
@@ -57,7 +33,7 @@ get_command(){
 static void
 initialize_threads(app_data_t* app_data)
 {
-	int i;
+	unsigned i;
 
 	app_data->sched = sched_init(stPrio);
 
@@ -100,7 +76,7 @@ do_load(ui_cmd_t* cmd, app_data_t* app_data)
 BOOL
 do_run(ui_cmd_t* cmd, app_data_t* app_data)
 {
-	int i;
+	unsigned i;
 
 	if (!app_data->loaded)
 	{
@@ -139,7 +115,7 @@ validate_tid_param(ui_cmd_t* cmd, app_data_t* app_data)
 		return -1;
 	}
 	tid = atoi(cmd->param);
-	if ((tid < 0) || ( tid >= app_data->nthreads))
+	if ((tid < 0) || ( tid >= (int)app_data->nthreads))
 	{
 	  printf("Invalid thread id.\n");
 	  return -1;
@@ -167,6 +143,7 @@ do_sw(ui_cmd_t* cmd, app_data_t* app_data)
 BOOL
 do_msw(ui_cmd_t* cmd, app_data_t* app_data)
 {
+	UNUSED(cmd);
 	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
@@ -179,6 +156,7 @@ do_msw(ui_cmd_t* cmd, app_data_t* app_data)
 BOOL
 do_asw(ui_cmd_t* cmd, app_data_t* app_data)
 {
+	UNUSED(cmd);
 	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
@@ -192,6 +170,7 @@ do_asw(ui_cmd_t* cmd, app_data_t* app_data)
 BOOL
 do_switches(ui_cmd_t* cmd, app_data_t* app_data)
 {
+	UNUSED(cmd);
 	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
@@ -223,7 +202,8 @@ BOOL
 do_mjw(ui_cmd_t* cmd, app_data_t* app_data)
 {
 	unsigned max_job_wait = 0;
-	int i;
+	unsigned i;
+	UNUSED(cmd);
 
 	if (!app_data->initialized)
 	{
@@ -243,7 +223,8 @@ BOOL
 do_ajw(ui_cmd_t* cmd, app_data_t* app_data)
 {
 	unsigned sum_job_wait = 0;
-	int i;
+	unsigned i;
+	UNUSED(cmd);
 
 	if (!app_data->initialized)
 	{
@@ -262,6 +243,8 @@ do_ajw(ui_cmd_t* cmd, app_data_t* app_data)
 BOOL
 do_tasks(ui_cmd_t* cmd, app_data_t* app_data)
 {
+	UNUSED(cmd);
+
 	if (!app_data->initialized)
 	{
 	  printf("No data file loaded.\n");
@@ -273,9 +256,11 @@ do_tasks(ui_cmd_t* cmd, app_data_t* app_data)
 }
 
 int app_main(int argc, char **argv) {
-  app_data_t app_data = {0};
+  app_data_t app_data;
   ui_cmd_t cmd;
   BOOL exit = FALSE;
+  UNUSED(argc);
+  UNUSED(argv);
 
   app_data.tasks = NULL;
   app_data.initialized = FALSE;

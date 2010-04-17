@@ -9,6 +9,7 @@
 #include "include/test_queue.h"
 #include "include/test_app.h"
 
+void run_prio_scheduler_tests();
 
 void queue_tests()
 {

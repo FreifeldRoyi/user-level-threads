@@ -1,13 +1,6 @@
-/*
- * main.c
- *
- *  Created on: Mar 26, 2010
- *      Author: Freifeld Royi
- */
-#include "include/queue.h"
-#include "include/thread.h"
 #include <stdio.h>
 #include <assert.h>
+#include "include/app_main.h"
 
 int main(int argc, char* argv[])
 {
