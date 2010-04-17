@@ -37,7 +37,7 @@ struct sched_t* sched_init()
 	return toReturn;
 }
 
-int sched_add_thread(struct sched_t* schd, thread_t* thrd)
+int sched_add_thread(struct sched_t* schd, int prio, thread_t* thrd)
 {
 	return queue_push(SCHED_QUEUE(schd), thrd);
 }
