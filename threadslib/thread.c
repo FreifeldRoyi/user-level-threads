@@ -144,7 +144,6 @@ manager_thread_func(void* ptr)
 {
 	manager_thread_params_t* param = (manager_thread_params_t*)ptr;
 
-//	printf("manager thread started.\n");
 	while (1)
 	{
 		if ( (cur_thread = sched_next_thread(param->sched)) == NULL)
@@ -168,7 +167,6 @@ manager_thread_func(void* ptr)
 	 */
 		if (cur_thread->state == tsRunning)
 		{
-//			printf("manager: restoring thread %d\n", cur_thread->ID);
 			stats[cur_thread->ID].cur_switches_wait = 0;
 			mctx_restore(&cur_thread->cont);
 		}
