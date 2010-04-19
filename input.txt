@@ -1,0 +1,4 @@
+load tests/testCases/9__k=3___n=11___os102.txt
+run 1
+run 2
+exit
