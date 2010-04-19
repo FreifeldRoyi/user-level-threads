@@ -14,12 +14,15 @@
 
 typedef struct _prio_sched_t
 {
-	// TODO decide whether or not we want some sort of limit to the queue's priority
 	queue_t* prio_sched[LOWEST_PRIO];
 } prio_sched_t;
 
 int prio_sched_add_thread(struct sched_t* schd, thread_t* thrd)
 {
+	/*
+	 * priority should be somewhere between HIGHEST_PRIO and LOWEST_PRIO
+	 * where in our case, HIGHEST defined as 0 and LOWEST defined as 16
+	 */
 	assert(thrd->prio < LOWEST_PRIO);
 	return queue_push(SCHED_QUEUE(schd)[thrd->prio], thrd);
 }
