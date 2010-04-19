@@ -179,6 +179,7 @@ app_data_t load_app_data(FILE* f)
     load_thread_tasks(f, &ret.thread_params[i], ret.tasks, ret.ntasks);
   }
 
+  ret.sched = NULL;
   ret.loaded = TRUE;
 
   return ret;

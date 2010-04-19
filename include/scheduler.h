@@ -18,14 +18,21 @@ typedef enum{stFifo, stPrio} sched_type;
 #define PRIO_INC(_x) (((_x) > HIGHEST_PRIO)? ((_x)-1): (_x))
 #define PRIO_DEC(_x) (((_x) < LOWEST_PRIO)? ((_x)+1): (_x))
 
+
+/**
+ * Basic scheduler structure
+ * Enable a dynamic scheduler type change using the sched_type enum defined above.
+ * It's basically a naive Object implementation =)
+ */
 typedef struct sched_t
 {
+	//pointers to the designated functions
 	int (*add_thread)(struct sched_t*, thread_t*);
 	thread_t* (*next_thread)(struct sched_t*);
-	void (*for_all_threads)(struct sched_t* sched, void(*func)(thread_t*));
-	int (*destroy)(struct sched_t*);
+	void (*for_all_threads)(struct sched_t* sched, void(*func)(thread_t*)); //applies func on each thread in sched
+	int (*destroy)(struct sched_t*); //de-allocate
 
-	void* sched;
+	void* sched; //used as a pointer to the structure of the scheduler's real struct
 }sched_t;
 
 /**

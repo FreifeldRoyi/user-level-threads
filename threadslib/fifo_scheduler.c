@@ -33,17 +33,11 @@ int fifo_sched_add_thread(struct sched_t* schd, thread_t* thrd)
 	return queue_push(SCHED_QUEUE(schd), thrd);
 }
 
-/**
- * TODO will return NULL if the queue is empty don't forget to mention it in documentation
- */
 thread_t* fifo_sched_next_thread(struct sched_t* schd)
 {
 	return THREAD(queue_pop(SCHED_QUEUE(schd)));
 }
 
-/**
- * TODO will not delete the scheduler if not empty
- */
 int fifo_sched_destroy(struct sched_t* scheduler)
 {
 	int toReturn = SCHED_QUEUE(scheduler)->size;

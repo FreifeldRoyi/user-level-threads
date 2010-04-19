@@ -13,6 +13,10 @@
 #define THREAD(x) ((thread_t*) (x))
 #define THREAD_STATS(x) THREAD((x)) -> stats
 
+/**
+ *used as an indicator for thread's state.
+ *Whether it has finished its job or not
+ */
 enum thread_state_t {tsRunning, tsFinished} ;
 
 #define THREAD_NONGLOBAL_STATS 0x80000000
@@ -25,14 +29,17 @@ typedef struct _thread_stats_t
 	unsigned cur_switches_wait;
 }thread_stats_t;
 
+/*
+ *thread's struct type.
+ */
 typedef struct thread
 {
 	ucontext_t cont;
-	enum thread_state_t state;
+	enum thread_state_t state; //thread's state (finished or not as defined above)
 	int ID;
 	int prio;
 
-	void* stack;
+	void* stack; //designated stack
 } thread_t;
 
 /**

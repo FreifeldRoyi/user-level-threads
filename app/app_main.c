@@ -331,7 +331,10 @@ int app_main(int argc, char **argv) {
 	  }
   }while (!exit);
 
-  free_app_data(&app_data);
+  if (!app_data.initialized)
+  {
+	  free_app_data(&app_data);
+  }
 
   return 0;
 }
